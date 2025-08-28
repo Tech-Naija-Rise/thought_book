@@ -74,7 +74,3 @@ python notes_app.py
 ## License
 
 MIT License
-
-```
-
-If you want, I can also create a **more concise version optimized for GitHub** with badges and quick installation instructions—good for showing the project publicly. Do you want me to do that next?
