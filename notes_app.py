@@ -337,6 +337,7 @@ class NotesApp(ctk.CTk):
         else:
             tkmsg.showerror("Error", "Invalid recovery code.")
             return False
+    
     def ask_password(self):
         try:
             with open(self.password_file, 'r') as f:
@@ -414,7 +415,6 @@ class NotesApp(ctk.CTk):
 
 
 if __name__ == "__main__":
-
     ctk.set_appearance_mode("dark")
     app = NotesApp()
     app.mainloop()
