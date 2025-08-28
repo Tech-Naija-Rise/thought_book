@@ -1,3 +1,4 @@
+
 # NotesApp
 
 A simple, secure note-taking application built with **CustomTkinter**. NotesApp provides a clean and minimal interface for creating, editing, and organizing notes, while keeping your data encrypted and password-protected.
@@ -34,3 +35,46 @@ A simple, secure note-taking application built with **CustomTkinter**. NotesApp 
 
 ```bash
 pip install customtkinter
+````
+
+3. Run the application:
+
+```bash
+python notes_app.py
+```
+
+---
+
+## Usage
+
+1. On first launch, set a password and recovery code.
+2. Add a new note using the **Add Note** button.
+3. Click on a note in the sidebar to edit it.
+4. Use the **Settings** button to change your password.
+5. Notes are automatically saved and encrypted.
+
+**Tip:** Keep your recovery code in a safe place to reset your password if needed.
+
+---
+
+## Security
+
+* Passwords are hashed using **SHA-256**.
+* Notes content is encrypted with a **simple substitution cipher**.
+* Recovery mechanism ensures you can reset passwords without losing data.
+
+---
+
+## Author
+
+**Umar Mahmud**
+
+---
+
+## License
+
+MIT License
+
+```
+
+If you want, I can also create a **more concise version optimized for GitHub** with badges and quick installation instructions—good for showing the project publicly. Do you want me to do that next?
