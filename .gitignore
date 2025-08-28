@@ -1,0 +1,7 @@
+*.pass
+notes.json
+*.key
+*.db
+__pycache__/
+env/
+venv/
