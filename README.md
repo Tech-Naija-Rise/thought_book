@@ -5,6 +5,9 @@
 A **simple, secure note-taking application** built with **CustomTkinter**.
 It provides a clean and modern interface for creating, editing, and managing notes with lightweight encryption and password protection.
 
+<img width="367" height="229" alt="image" src="https://github.com/user-attachments/assets/83fa5039-86da-40c5-9b81-312a9ee051eb" />
+<img width="625" height="422" alt="image" src="https://github.com/user-attachments/assets/7b9e7f51-6027-47a9-b00c-2e6ad81735a6" />
+
 ---
 
 ## 🚀 Features
