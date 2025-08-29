@@ -93,7 +93,6 @@ Thought_Book/
 ## 👨‍💻 Author
 
 Created by **Umar Mahmud**
-Part of the **Tech Naija Rise (TNR)** initiative 🚀
 
 ---
 

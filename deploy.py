@@ -1,18 +1,29 @@
 
 import os
-import sys
+import shutil
+
 from pathlib import Path
 import win32com.client
 
 
+app_name = "Thought Book"
 def build_exe(script_path):
     script_path = Path(script_path).resolve()
-    cmd = f'pyinstaller -n "Thought Book" --onefile --noconsole "{script_path}"'
+    cmd = f'pyinstaller -n "{app_name}" --onefile --noconsole "{script_path}"'
     os.system(cmd)
-    return script_path.parent / "dist" / (script_path.stem + ".exe")
+
+    # cleanup unwanted artifacts
+    for item in ["build", "__pycache__", f"{app_name}.spec"]:
+        p = Path(item)
+        if p.is_dir():
+            shutil.rmtree(p, ignore_errors=True)
+        elif p.is_file():
+            p.unlink(missing_ok=True)
+
+    return script_path.parent / "dist" / (app_name + ".exe")
 
 
-def create_shortcut(target, shortcut_path, hotkey=None, workdir=None, description=""):
+def create_shortcut(target, shortcut_path, hotkey=None, workdir=None, description="", icon=None):
     shell = win32com.client.Dispatch("WScript.Shell")
     shortcut = shell.CreateShortcut(str(shortcut_path))
     shortcut.TargetPath = str(target)
@@ -20,6 +31,11 @@ def create_shortcut(target, shortcut_path, hotkey=None, workdir=None, descriptio
     shortcut.Description = description
     if hotkey:
         shortcut.Hotkey = hotkey  # format "CTRL+ALT+N"
+
+    if icon:
+        # icon can be "C:\\Windows\\System32\\shell32.dll,XX"
+        shortcut.IconLocation = icon
+
     shortcut.save()
     return shortcut_path
 
@@ -31,12 +47,14 @@ def main():
 
     # 2. Create shortcut on Desktop
     desktop = Path.home() / "Desktop"
-    shortcut_path = desktop / "NotesApp.lnk"
+    shortcut_path = desktop / f"{app_name}.lnk"
     create_shortcut(
         target=exe_path,
         shortcut_path=shortcut_path,
-        hotkey="CTRL+ALT+T", # Control + Alt + T (think)
-        description="Launch Thought Book: A place to think in peace"
+        hotkey="CTRL+ALT+T",  # Control + Alt + T (think)
+        description="Launch Thought Book: A place to think in peace",
+        # 170 = “computer with speech bubble” on most systems
+        icon=r"C:\Windows\System32\shell32.dll,180"
     )
     print(f"Shortcut created: {shortcut_path}")
 
