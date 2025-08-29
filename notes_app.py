@@ -26,7 +26,8 @@ Author: Umar Mahmud
 """
 
 
-from tkinter import simpledialog, messagebox as tkmsg
+from utils import create_table, askstring, get_notes, delete_note, NOTES_DB, save_note
+from tkinter import messagebox as tkmsg
 import hashlib
 import sys
 from tkinter import simpledialog
@@ -34,15 +35,16 @@ import customtkinter as ctk
 import json
 import os
 
-
-import tkinter.messagebox as tkmsg
+create_table()
 
 RECOVERY_FILE = "recovery.key"
+
 
 def set_recovery_key(code: str):
     hashed = hashlib.sha256(code.encode('utf-8')).hexdigest()
     with open(RECOVERY_FILE, 'w') as f:
         f.write(hashed)
+
 
 def verify_recovery_key(code: str) -> bool:
     if not os.path.exists(RECOVERY_FILE):
@@ -52,28 +54,41 @@ def verify_recovery_key(code: str) -> bool:
         stored_hash = f.readline().strip()
     return entered_hash == stored_hash
 
+
 class SimpleSubstitution:
     def __init__(self):
         # Only a–i mapped
         self.encode_map = {
-            "a": "1", "b": "2", "c": "3",
-            "d": "4", "e": "5", "f": "6",
-            "g": "7", "h": "8", "i": "9"
+            "a": "01", "b": "02", "c": "03",
+            "d": "04", "e": "05", "f": "06",
+            "g": "07", "h": "08", "i": "09",
+
+            "A": "11", "B": "12", "C": "13",
+            "D": "14", "E": "15", "F": "16",
+            "G": "17", "H": "18", "I": "19",
+
         }
+
         self.decode_map = {v: k for k, v in self.encode_map.items()}
 
     def encrypt(self, text: str) -> str:
         """Replace a–i with digits 1–9."""
         encoded = ""
-        for char in text.lower():
+        for char in text:
             encoded += self.encode_map.get(char, char)
         return encoded
 
     def decrypt(self, text: str) -> str:
-        """Replace digits 1–9 back with a–i."""
         decoded = ""
-        for char in text:
-            decoded += self.decode_map.get(char, char)
+        i = 0
+        while i < len(text):
+            pair = text[i:i+2]
+            if pair in self.decode_map:
+                decoded += self.decode_map[pair]
+                i += 2
+            else:
+                decoded += text[i]
+                i += 1
         return decoded
 
     def pass_hash(self, text: str) -> str:
@@ -90,19 +105,48 @@ class SettingsWindow(ctk.CTkToplevel):
     def __init__(self, parent, cipher):
         super().__init__(parent)
         self.title("Settings")
-        self.geometry("300x200")
+        self.geometry("300x250")
+        self.resizable(False, False)
+        self.transient(parent)   # Tie dialog to parent (only on top of it)
+        self.grab_set()   # make modal
+        
         self.cipher = cipher
         self.parent = parent
 
-        # Create a section for password change
+        # Change password section
         ctk.CTkLabel(self, text="Change Password").pack(pady=(20, 5))
-
         self.change_pass_btn = ctk.CTkButton(
             self, text="Change Password", command=self.change_password)
         self.change_pass_btn.pack(pady=5)
 
-        # Future settings can be added here
-        # Example: theme toggle, autosave interval, etc.
+        # Divider
+        ctk.CTkLabel(self, text="Notes Management").pack(pady=(20, 5))
+
+        # Clear all notes button
+        self.clear_notes_btn = ctk.CTkButton(
+            self,
+            text="Clear All Notes",
+            fg_color="red",
+            hover_color="darkred",
+            command=self.confirm_clear_all
+        )
+        self.clear_notes_btn.pack(pady=5)
+
+    def confirm_clear_all(self):
+        dialog = ctk.CTkInputDialog(
+            text="Type 'YES' to delete ALL notes permanently:",
+            title="Confirm Clear All"
+        )
+        answer = dialog.get_input()
+        if answer and answer.strip().upper() == "YES":
+            from utils import clear_all_notes
+            clear_all_notes()
+            self.parent.notes.clear()
+            self.parent.refresh_list()
+            self.parent.title_entry.delete(0, "end")
+            self.parent.textbox.delete("1.0", "end")
+            self.parent.current_index = None
+            tkmsg.showinfo("Success", "All notes deleted successfully!")
 
     def verify_current_password(self):
         """Ask user to enter current password for verification."""
@@ -110,7 +154,7 @@ class SettingsWindow(ctk.CTkToplevel):
             tkmsg.showerror("Error", "No password set yet.")
             return False
 
-        entered = simpledialog.askstring(
+        entered = askstring(
             "Verify Password", "Enter current password:", show="*")
         if entered is None:
             return False
@@ -129,7 +173,7 @@ class SettingsWindow(ctk.CTkToplevel):
         if not self.verify_current_password():
             return
 
-        new_pass = simpledialog.askstring(
+        new_pass = askstring(
             "New Password", "Enter new password:", show="*")
         if not new_pass:
             tkmsg.showinfo("Info", "Password change cancelled.")
@@ -151,10 +195,9 @@ class NotesApp(ctk.CTk):
         self.autosave_after_id = None
 
         # unlock app with password
-
         self.password = None
         self.password_file = "pass.pass"
-        
+
         # unlock app with password
         self.locked = True
         while self.locked:
@@ -170,7 +213,7 @@ class NotesApp(ctk.CTk):
             self.title("Thought Book")
             self.geometry("800x500")
 
-            self.notes_file = "notes.json"
+            self.notes_file = NOTES_DB
             # After loading notes
             self.notes = self.load_notes()
             self.current_index = None
@@ -181,7 +224,8 @@ class NotesApp(ctk.CTk):
 
             # Example button in sidebar or menu
             settings_btn = ctk.CTkButton(
-                self.sidebar, text="Settings", command=lambda: SettingsWindow(self, self.cipher))
+                self.sidebar,
+                fg_color="#555555", text="Settings", command=lambda: SettingsWindow(self, self.cipher))
             settings_btn.pack(pady=5)
 
             button_frame = ctk.CTkFrame(self.sidebar)
@@ -191,13 +235,14 @@ class NotesApp(ctk.CTk):
             self.add_button = ctk.CTkButton(
                 button_frame,
                 text="Add Note",
+                fg_color="#555555",
                 width=80,
                 command=self.add_note)
             self.add_button.pack(side="left", pady=5, padx=2)
             self.delete_button = ctk.CTkButton(
                 button_frame,
                 text="Delete Note",
-                fg_color="red",
+                fg_color="#555555",
                 hover_color="darkred",
                 text_color="white",
                 command=self.delete_note,
@@ -221,7 +266,8 @@ class NotesApp(ctk.CTk):
                 self.editor_frame, placeholder_text="Title")
             self.title_entry.pack(fill="x", pady=5)
 
-            self.textbox = ctk.CTkTextbox(self.editor_frame)
+            self.textbox = ctk.CTkTextbox(
+                self.editor_frame, undo=True, wrap=ctk.WORD)
             self.textbox.pack(fill="both", expand=True, pady=5)
 
             self.title_entry.bind(
@@ -253,16 +299,8 @@ class NotesApp(ctk.CTk):
             500, self.save_current_note)  # 5s delay
 
     def load_notes(self) -> list:
-        """Load notes from JSON file"""
-        if os.path.exists(self.notes_file):
-            with open(self.notes_file, "r") as f:
-                return json.load(f)
-        return []
-
-    def save_notes(self):
-        """Save notes to JSON file"""
-        with open(self.notes_file, "w") as f:
-            json.dump(self.notes, f, indent=4)
+        """Load notes from SQLite database"""
+        return get_notes()
 
     def refresh_list(self):
         """Refresh the sidebar list of notes"""
@@ -274,7 +312,7 @@ class NotesApp(ctk.CTk):
         for idx, note in enumerate(self.notes):
             title = note.get("title", "Untitled")
             display_title = self.truncate_text(
-                title, max_length=20)  # adjust length as you like
+                title, max_length=20)
             btn = ctk.CTkButton(
                 self.scrollable_list, fg_color="#333333",
                 text=display_title, width=180,
@@ -289,46 +327,44 @@ class NotesApp(ctk.CTk):
 
     def load_note(self, index):
         """Load a note into the editor by index, saving previous note first"""
-        # Save the previous note before switching
         if self.current_index is not None:
             self.save_current_note(index_to_save=self.current_index)
 
-        # Now update current_index to the new note
         self.current_index = index
         note = self.notes[index]
 
-        # Update editor
         self.title_entry.delete(0, "end")
         self.title_entry.insert(0, note.get("title", ""))
         self.textbox.delete("1.0", "end")
         self.textbox.insert("1.0", self.decrypt(note.get("content", "")))
 
-        # Highlight current button
         for i, btn in enumerate(self.note_buttons):
             btn.configure(fg_color="#555555" if i == index else "#333333")
 
     def delete_note(self):
-        """Delete the currently selected note"""
-        if self.current_index is not None:
-            # Remove the note
-            self.notes.pop(self.current_index)
-            self.save_notes()
+        if tkmsg.askyesno("Confirm Delete", "Are you sure you want to delete this note?"):
+            if self.current_index is not None:
+                note_id = self.notes[self.current_index].get("id")
+                if note_id:
+                    delete_note(note_id)
+                    del self.notes[self.current_index]
 
-            # Reset editor
-            self.title_entry.delete(0, "end")
-            self.textbox.delete("1.0", "end")
-            self.current_index = None
+                # Reset editor
+                self.title_entry.delete(0, "end")
+                self.textbox.delete("1.0", "end")
+                self.current_index = None
 
-            # Refresh sidebar
-            self.refresh_list()
-    
+                self.refresh_list()
+
     def forgot_password(self):
-        code = simpledialog.askstring("Recovery", "Enter recovery code:", show="*")
+        code = askstring(
+            "Recovery", "Enter recovery code:", show="*")
         if code is None:
             return False
 
         if verify_recovery_key(code):
-            new_pass = simpledialog.askstring("New Password", "Enter new password:", show="*")
+            new_pass = askstring(
+                "New Password", "Enter new password:", show="*")
             if new_pass:
                 with open(self.password_file, 'w') as f:
                     f.write(self.cipher.pass_hash(new_pass))
@@ -337,13 +373,14 @@ class NotesApp(ctk.CTk):
         else:
             tkmsg.showerror("Error", "Invalid recovery code.")
             return False
-    
+
     def ask_password(self):
         try:
             with open(self.password_file, 'r') as f:
                 PASSWORD_HASH = f.readline().strip()
 
-            entered = simpledialog.askstring("Password", "Enter password (or leave blank to reset):", show="*")
+            entered = askstring(
+                "Password", "Enter password (or leave blank to reset):", show="*")
             if entered is None:
                 return "Cancelled"
 
@@ -357,15 +394,16 @@ class NotesApp(ctk.CTk):
                 return False
 
         except FileNotFoundError:
-            # First-time setup
-            new_pass = simpledialog.askstring("Password", "Create password:", show="*")
+            new_pass = askstring(
+                "Password", "Create password:", show="*")
             if new_pass is None:
                 return "Cancelled"
 
             with open(self.password_file, 'w') as f:
                 f.write(self.cipher.pass_hash(new_pass))
 
-            recovery = simpledialog.askstring("Recovery Code", "Set a recovery code (write it down somewhere safe):", show="*")
+            recovery = askstring(
+                "Recovery Code", "Set a recovery code (write it down somewhere safe):", show="*")
             if recovery:
                 set_recovery_key(recovery)
             tkmsg.showinfo("Info", "Password and recovery code set.")
@@ -379,39 +417,42 @@ class NotesApp(ctk.CTk):
         title = self.title_entry.get()
 
         if idx is not None:
-            self.notes[idx] = {"title": title, "content": content}
+            note_id = self.notes[idx].get("id")
+            if note_id:
+                # update existing note
+                save_note(title, content, note_id)
+                self.notes[idx] = {"id": note_id,
+                                   "title": title, "content": content}
+            else:
+                # fallback insert
+                new_id = save_note(title, content)
+                self.notes[idx] = {"id": new_id,
+                                   "title": title, "content": content}
         else:
-            self.notes.append({"title": title, "content": content})
+            # new note
+            new_id = save_note(title, content)
+            self.notes.append(
+                {"id": new_id, "title": title, "content": content})
             self.current_index = len(self.notes) - 1
 
-        self.save_notes()
-        self.refresh_list()
-
-        self.save_notes()
         self.refresh_list()
 
     def add_note(self):
         """Create a new note, saving current note first"""
-        # Save current note before creating a new one
         if self.current_index is not None:
             self.save_current_note(index_to_save=self.current_index)
 
-        # Clear editor for the new note
         self.current_index = None
         self.title_entry.delete(0, "end")
         self.textbox.delete("1.0", "end")
 
-        # Set focus to title entry for immediate typing
         self.title_entry.insert(0, "New Note")
         self.title_entry.focus_set()
 
-        # Save the new note to notes list
         self.save_current_note()
 
-        # Select all text in the textbox
         self.title_entry.select_range(0, "end")
         self.title_entry.focus()
-
 
 
 if __name__ == "__main__":
