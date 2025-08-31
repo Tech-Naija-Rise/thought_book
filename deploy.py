@@ -7,9 +7,17 @@ import win32com.client
 
 
 app_name = "Thought Book"
+
+
 def build_exe(script_path):
     script_path = Path(script_path).resolve()
-    cmd = f'pyinstaller -n "{app_name}" --onefile --noconsole "{script_path}"'
+    # hidden_imports = ["utils", "ac"]
+
+    # hidden_flags = " ".join(
+    #     [f"--hidden-import {mod}" for mod in hidden_imports])
+
+    cmd = f'pyinstaller --noconfirm -n "{app_name}" --noconsole "{script_path}"'
+    print(cmd)
     os.system(cmd)
 
     # cleanup unwanted artifacts
@@ -53,8 +61,8 @@ def main():
         shortcut_path=shortcut_path,
         hotkey="CTRL+ALT+T",  # Control + Alt + T (think)
         description="Launch Thought Book: A place to think in peace",
-        # 170 = “computer with speech bubble” on most systems
-        icon=r"C:\Windows\System32\shell32.dll,180"
+        # 172 = “computer with speech bubble” on most systems
+        icon=r"C:\Windows\System32\shell32.dll,172"
     )
     print(f"Shortcut created: {shortcut_path}")
 

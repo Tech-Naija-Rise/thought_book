@@ -9,3 +9,6 @@ dist/
 build/
 *.spec
 test.py
+*.txt
+autocompleteAI/*
+autocompleteAI/

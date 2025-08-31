@@ -26,77 +26,22 @@ Author: Umar Mahmud
 """
 
 
-from utils import create_table, askstring, get_notes, delete_note, NOTES_DB, save_note
+from utils import (
+    SimpleCipher,
+    create_table,
+    askstring, get_notes,
+    delete_note, NOTES_DB,
+    save_note, set_recovery_key,
+    verify_recovery_key)
+
+
 from tkinter import messagebox as tkmsg
-import hashlib
+
 import sys
-from tkinter import simpledialog
+
 import customtkinter as ctk
-import json
+
 import os
-
-create_table()
-
-RECOVERY_FILE = "recovery.key"
-
-
-def set_recovery_key(code: str):
-    hashed = hashlib.sha256(code.encode('utf-8')).hexdigest()
-    with open(RECOVERY_FILE, 'w') as f:
-        f.write(hashed)
-
-
-def verify_recovery_key(code: str) -> bool:
-    if not os.path.exists(RECOVERY_FILE):
-        return False
-    entered_hash = hashlib.sha256(code.encode('utf-8')).hexdigest()
-    with open(RECOVERY_FILE, 'r') as f:
-        stored_hash = f.readline().strip()
-    return entered_hash == stored_hash
-
-
-class SimpleSubstitution:
-    def __init__(self):
-        # Only a–i mapped
-        self.encode_map = {
-            "a": "01", "b": "02", "c": "03",
-            "d": "04", "e": "05", "f": "06",
-            "g": "07", "h": "08", "i": "09",
-
-            "A": "11", "B": "12", "C": "13",
-            "D": "14", "E": "15", "F": "16",
-            "G": "17", "H": "18", "I": "19",
-
-        }
-
-        self.decode_map = {v: k for k, v in self.encode_map.items()}
-
-    def encrypt(self, text: str) -> str:
-        """Replace a–i with digits 1–9."""
-        encoded = ""
-        for char in text:
-            encoded += self.encode_map.get(char, char)
-        return encoded
-
-    def decrypt(self, text: str) -> str:
-        decoded = ""
-        i = 0
-        while i < len(text):
-            pair = text[i:i+2]
-            if pair in self.decode_map:
-                decoded += self.decode_map[pair]
-                i += 2
-            else:
-                decoded += text[i]
-                i += 1
-        return decoded
-
-    def pass_hash(self, text: str) -> str:
-        """
-        Generate a secure SHA-256 hash of the password.
-        Returns the hex digest string (64 characters).
-        """
-        return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 class SettingsWindow(ctk.CTkToplevel):
@@ -105,11 +50,12 @@ class SettingsWindow(ctk.CTkToplevel):
     def __init__(self, parent, cipher):
         super().__init__(parent)
         self.title("Settings")
-        self.geometry("300x250")
-        self.resizable(False, False)
+        self.geometry("300x350")
+        # add a scrollable
+        self.resizable(False, True)
         self.transient(parent)   # Tie dialog to parent (only on top of it)
         self.grab_set()   # make modal
-        
+
         self.cipher = cipher
         self.parent = parent
 
@@ -187,8 +133,10 @@ class SettingsWindow(ctk.CTkToplevel):
 class NotesApp(ctk.CTk):
     def __init__(self):
         super().__init__()
+        if not os.path.exists(NOTES_DB):
+            create_table()
 
-        self.cipher = SimpleSubstitution()
+        self.cipher = SimpleCipher()
         self.encrypt = self.cipher.encrypt
         self.decrypt = self.cipher.decrypt
 
@@ -222,11 +170,10 @@ class NotesApp(ctk.CTk):
             self.sidebar = ctk.CTkFrame(self, width=200, corner_radius=0)
             self.sidebar.pack(side="left", fill="y")
 
-            # Example button in sidebar or menu
-            settings_btn = ctk.CTkButton(
-                self.sidebar,
-                fg_color="#555555", text="Settings", command=lambda: SettingsWindow(self, self.cipher))
-            settings_btn.pack(pady=5)
+            # AI coming soon
+            self.suggest_label = ctk.CTkLabel(
+                self.sidebar, text="Offline AI suggests coming soon...")
+            self.suggest_label.pack()
 
             button_frame = ctk.CTkFrame(self.sidebar)
             button_frame.pack(pady=5)
@@ -251,8 +198,14 @@ class NotesApp(ctk.CTk):
             self.delete_button.pack(side="left", pady=5)
 
             self.scrollable_list = ctk.CTkScrollableFrame(
-                self.sidebar, width=200, height=400)
+                self.sidebar, width=200)
             self.scrollable_list.pack(fill="both", expand=True)
+
+            # Example button in sidebar or menu
+            settings_btn = ctk.CTkButton(
+                self.sidebar,
+                fg_color="#555555", text="Settings", command=lambda: SettingsWindow(self, self.cipher))
+            settings_btn.pack(pady=5)
 
             self.note_buttons = []
             self.refresh_list()
@@ -290,6 +243,7 @@ class NotesApp(ctk.CTk):
         # Save whatever is in the editor before exit
         self.save_current_note()
         self.destroy()
+        sys.exit()
 
     def schedule_autosave(self):
         """Schedule autosave after a delay to avoid excessive saves."""
