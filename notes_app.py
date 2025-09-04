@@ -25,7 +25,12 @@ Usage:
 Author: Umar Mahmud
 """
 
-
+import threading
+from tkinter import messagebox as tkmsg
+import sys
+import customtkinter as ctk
+import os
+# from ac import AutoCompleterAI
 from utils import (
     SimpleCipher,
     create_table,
@@ -33,15 +38,14 @@ from utils import (
     delete_note, NOTES_DB,
     save_note, set_recovery_key,
     verify_recovery_key)
+import logging
 
-
-from tkinter import messagebox as tkmsg
-
-import sys
-
-import customtkinter as ctk
-
-import os
+# setup logging once (top-level of your file, before class)
+logging.basicConfig(
+    filename="training.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 
 class SettingsWindow(ctk.CTkToplevel):
@@ -156,7 +160,8 @@ class NotesApp(ctk.CTk):
                 sys.exit()
             else:
                 tkmsg.showerror("Error", "Incorrect password. Try again.")
-
+        self.current_note = ""
+        self.max_words_b4_training = 3000
         if not self.locked:
             self.title("Thought Book")
             self.geometry("800x500")
@@ -172,8 +177,10 @@ class NotesApp(ctk.CTk):
 
             # AI coming soon
             self.suggest_label = ctk.CTkLabel(
-                self.sidebar, text="Offline AI suggests coming soon...")
-            self.suggest_label.pack()
+                self.sidebar,
+                text="AI Suggestion",
+            )
+            # self.suggest_label.pack()
 
             button_frame = ctk.CTkFrame(self.sidebar)
             button_frame.pack(pady=5)
@@ -238,12 +245,32 @@ class NotesApp(ctk.CTk):
                 # Auto-load the first saved note for convenience
                 self.load_note(0)
 
+        # self.ac = AutoCompleterAI(self, self.textbox, self.suggest_label)
+        # self.textbox.bind("<KeyRelease>", self.on_key_release)
+        # TODO: whenever i train a model, i can just bring that .pth
+        # to the modelsfolder of the package here.
+
+    # def on_key_release(self, event=None):
+    #     self.ac.on_key_release()
+    #     self.suggest_label.configure(text=self.ac.final_suggestion)
+
     def on_close(self):
-        """Handle app close event."""
-        # Save whatever is in the editor before exit
-        self.save_current_note()
-        self.destroy()
-        sys.exit()
+        self.current_note = self.textbox.get("1.0", "end-1c").strip()
+        if self.current_note:
+            try:
+                logging.info("App closing, starting training job...")
+                from utils import all_notes
+                _all_notes = all_notes()
+
+                if _all_notes[0] > self.max_words_b4_training:
+                    # This already runs in its own thread
+                    # self.ac.train_AI(_all_notes[1], _all_notes[0])
+                    pass
+
+            except Exception as e:
+                logging.error(f"Failed to start training: {e}")
+
+        self.destroy()  # immediately close window
 
     def schedule_autosave(self):
         """Schedule autosave after a delay to avoid excessive saves."""
@@ -408,8 +435,10 @@ class NotesApp(ctk.CTk):
         self.title_entry.select_range(0, "end")
         self.title_entry.focus()
 
-
-if __name__ == "__main__":
+def main():
     ctk.set_appearance_mode("dark")
     app = NotesApp()
     app.mainloop()
+
+if __name__ == "__main__":
+    main()

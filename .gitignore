@@ -12,3 +12,4 @@ test.py
 *.txt
 autocompleteAI/*
 autocompleteAI/
+*.log

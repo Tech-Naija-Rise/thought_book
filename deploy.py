@@ -11,12 +11,13 @@ app_name = "Thought Book"
 
 def build_exe(script_path):
     script_path = Path(script_path).resolve()
-    # hidden_imports = ["utils", "ac"]
+    hidden_imports = ["autoai"]
 
-    # hidden_flags = " ".join(
-    #     [f"--hidden-import {mod}" for mod in hidden_imports])
+    hidden_flags = " ".join(
+        [f"--hidden-import {mod}" for mod in hidden_imports])
 
-    cmd = f'pyinstaller --noconfirm -n "{app_name}" --noconsole "{script_path}"'
+
+    cmd = f'pyinstaller --noconfirm -n "{app_name}" --onefile --noconsole "{script_path}"'
     print(cmd)
     os.system(cmd)
 

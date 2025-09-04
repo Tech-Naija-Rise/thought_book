@@ -18,7 +18,7 @@ USAGE:
 Notes: this module expects the caller to handle encryption/decryption of `content`.
 """
 
-import time
+import re
 import hashlib
 import string
 import customtkinter as ctk
@@ -187,6 +187,11 @@ def verify_recovery_key(code: str) -> bool:
 
 
 class SimpleCipher:
+    """
+    find a way to encrypt even the key itself
+    so that a person cannot use a program to hack and decode
+    the notes"""
+
     def __init__(self, key=3) -> None:
         self.alphabet = string.ascii_lowercase
         self.key = key
@@ -313,37 +318,67 @@ def askstring(title="Input", prompt="Enter value:", show=None):
     return result["value"]
 
 
-class TrainingUI(ctk.CTk):
-    def __init__(self):
-        super().__init__()
-        self.title("GPT Training Progress")
-        self.geometry("360x120")
+def count_words_in_string(text):
+    words = re.findall(r'\b\w+\b', text)
+    return len(words)
 
-        # Label for status
-        self.label = ctk.CTkLabel(self, text="Training not started…")
-        self.label.pack(fill="x", padx=10, pady=(10, 4))
 
-        # Progress bar
-        self.bar = ctk.CTkProgressBar(self)
-        self.bar.pack(fill="x", padx=10, pady=(0, 4))
-        self.bar.set(0.0)
+def all_notes():
+    """
+    Return the total number of WORDS and the notes in the database
+    from beginning to end.
 
-        # Percent text
-        self.percent = ctk.CTkLabel(self, text="0%")
-        self.percent.pack(fill="x", padx=10, pady=(0, 10))
+    This function is for 
+    the experimental AI to use 
+    to know when to finetune its model
 
-    def update_progress(self, current: int | str, end: int | str, message="Training..."):
-        """
-        Update the UI with training progress.
-        Pass current step, total steps (end), and an optional message.
-        """
+    """
+    all_notes = ""
+    decode = SimpleCipher().decrypt
+    # encode = SimpleCipher().encrypt
+    for note in get_notes():
+        all_notes += f"\n[{note['title']}]\n"
+        all_notes += decode(note['content'])
+    total = count_words_in_string(all_notes)
+    del decode
+    return total, all_notes
 
-        # clamp between 0 and 1
-        progress = max(0.0, min(1.0, int(current) / int(end)))
-        self.bar.set(progress)
-        self.label.configure(text=message)
-        self.percent.configure(text=f"{int(progress * 100)}%")
-        self.update_idletasks()  # force UI refresh
+
+if __name__ == "__main__":
+    print(all_notes())
+
+
+# class TrainingUI(ctk.CTk):
+#     def __init__(self):
+#         super().__init__()
+#         self.title("GPT Training Progress")
+#         self.geometry("360x120")
+
+#         # Label for status
+#         self.label = ctk.CTkLabel(self, text="Training not started…")
+#         self.label.pack(fill="x", padx=10, pady=(10, 4))
+
+#         # Progress bar
+#         self.bar = ctk.CTkProgressBar(self)
+#         self.bar.pack(fill="x", padx=10, pady=(0, 4))
+#         self.bar.set(0.0)
+
+#         # Percent text
+#         self.percent = ctk.CTkLabel(self, text="0%")
+#         self.percent.pack(fill="x", padx=10, pady=(0, 10))
+
+#     def update_progress(self, current: int | str, end: int | str, message="Training..."):
+#         """
+#         Update the UI with training progress.
+#         Pass current step, total steps (end), and an optional message.
+#         """
+
+#         # clamp between 0 and 1
+#         progress = max(0.0, min(1.0, int(current) / int(end)))
+#         self.bar.set(progress)
+#         self.label.configure(text=message)
+#         self.percent.configure(text=f"{int(progress * 100)}%")
+#         self.update_idletasks()  # force UI refresh
 
 
 __all__ = [
@@ -356,15 +391,3 @@ __all__ = [
     "delete_note",
     "migrate_from_json",
 ]
-
-
-# if __name__ == "__main__":
-#     app = TrainingUI()
-
-#     total_steps = 50
-#     for step in range(total_steps + 1):
-#         app.update_progress(step, total_steps, f"Step {step}/{total_steps}")
-#         time.sleep(0.05)  # simulate training work
-
-#     app.update_progress(total_steps, total_steps, "✅ Training complete.")
-#     app.mainloop()
