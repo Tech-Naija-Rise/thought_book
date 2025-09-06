@@ -33,7 +33,7 @@ I often wanted to capture a thought quickly, but:
 ---
 
 ## 🔒 Privacy First  
-Your notes are stored locally, encrypted, and backed up securely to your Drive.
+Your notes are stored locally, encrypted, and and manually backed up securely to your Drive.
 
 ---
 
