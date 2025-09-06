@@ -1,104 +1,44 @@
-
-# BM (Bobsi Mo) A System of Interconnected Apps
-
-## 📝 BM Thought Book (NotesApp)
-
-A **simple, secure note-taking application** built with **CustomTkinter**.
-It provides a clean and modern interface for creating, editing, and managing notes with lightweight encryption and password protection.
-
-<img width="367" height="229" alt="image" src="https://github.com/user-attachments/assets/83fa5039-86da-40c5-9b81-312a9ee051eb" />
-<img width="625" height="422" alt="image" src="https://github.com/user-attachments/assets/7b9e7f51-6027-47a9-b00c-2e6ad81735a6" />
+# Thought Book ✍️  
+_A dedicated, offline, and private space for your thoughts._  
 
 ---
 
-## 🚀 Features
-
-* 🗂 **Sidebar navigation** – view and switch between notes quickly.
-* ✍ **Create, edit, and delete notes** with ease.
-* 💾 **Auto-save** while typing (never lose your work).
-* 🔒 **Password protection** for opening the app.
-* 🔑 **Recovery code** support if you forget your password.
-* 🔐 **Light encryption** of note contents.
-* 🎨 **Modern UI** powered by [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter).
+## 🌍 Why I Built It  
+I often wanted to capture a thought quickly, but:  
+- No pen around.  
+- Google Notes didn’t work offline.  
+- Notepad left private notes exposed.  
 
 ---
 
-## 🔮 Planned Extensions
-
-* Dark/Light theme toggle.
-* Search and filtering inside the sidebar.
-
----
-
-## 📦 Installation & Usage
-
-1. **Clone this repo**
-
-   ```bash
-   git clone https://github.com/Mahmudumar/thought_book.git
-   cd Thought_Book
-   ```
-
-2. **Install dependencies**
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-   > Required: `customtkinter`, `pyinstaller`, `pywin32`
-
-3. **Deploy the app**
-   Run the deployment script:
-
-   ```bash
-   python deploy.py
-   ```
-
-   This will:
-
-   * Bundle the app into a standalone `.exe` (via PyInstaller).
-   * Create a Desktop shortcut (`NotesApp.lnk`) with a hotkey (default: `Ctrl+Alt+T`).
-
-4. **Launch the app**
-
-   * Use the Desktop shortcut
-   * Or run directly from `dist\Thought Book.exe`.
+## 💡 The Solution  
+- Opens instantly with a shortcut.  
+- Works fully offline.  
+- Encrypts notes for privacy.  
+- Backups to Google Drive (lightly encrypted).  
 
 ---
 
-## 🔑 First-time Setup
-
-* On first launch, you’ll be asked to **create a password**.
-* You’ll also be prompted to set a **recovery code** (write it down somewhere safe!).
-* Notes are stored in `BMTbnotes.db` and the contents are protected with a light substitution cipher.
+## 🖼️ Demo  
+![alt text](./docs/imgs/tb.png)
+![alt text](./docs/imgs/tb2.png)
 
 ---
 
-## 🧩 Project Structure
-
-```
-Thought_Book/
-│── deploy.py        # Deployment script (builds exe + shortcut)
-│── notes_app.py     # Main NotesApp source code
-│── utils.py         #SQLite helper
-│── pass.pass        # Stored password hash
-│── recovery.key     # Recovery code hash
-│── README.md        # Project documentation
-│── requirements.txt # Dependencies
-```
+## 🚀 How to Use  
+1. Clone the repo  
+2. Run `deploy.py`  
+3. Press your shortcut → start writing
 
 ---
 
-## 👨‍💻 Author
-
-Created by **Umar Mahmud**
+## 🔒 Privacy First  
+Your notes are stored locally, encrypted, and backed up securely to your Drive.
 
 ---
 
 ## ⚠️ Notes
+For full documentation of the app, visit the documentation of this project [here](./docs/README.md)
 
-* Tested on **Windows only** (due to shortcut + hotkey support).
-* If you rerun `deploy.py`, it cleans old builds and generates a fresh `.exe`.
-* Default hotkey can be changed in `deploy.py`.
-* The `BMTbnotes.db` database is universally stored in your system's appdata folder in `roaming` folder (try pressing Windows + R and then typing `appdata`)
-* For tips on how to backup your notes, [read the docs](./docs/how_to.md)
+# Download
+If you don't have python on your computer, you can just download it here: [Thought Book app](https://github.com/Mahmudumar/thought_book/releases/latest)
