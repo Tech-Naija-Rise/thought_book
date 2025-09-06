@@ -25,11 +25,10 @@ Usage:
 Author: Umar Mahmud
 """
 
+from constants import *
 import datetime
 import re
 from tkinter.messagebox import askyesno
-
-import threading
 from tkinter import messagebox as tkmsg
 import sys
 import customtkinter as ctk
@@ -47,7 +46,7 @@ import logging
 
 # setup logging once (top-level of your file, before class)
 logging.basicConfig(
-    filename="logs.log",
+    filename=logs_file,
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
 
@@ -106,7 +105,7 @@ class SettingsWindow(ctk.CTkToplevel):
 
     def verify_current_password(self):
         """Ask user to enter current password for verification."""
-        if not os.path.exists("pass.pass"):
+        if not os.path.exists(pass_file):
             tkmsg.showerror("Error", "No password set yet.")
             return False
 
@@ -115,7 +114,7 @@ class SettingsWindow(ctk.CTkToplevel):
         if entered is None:
             return False
 
-        with open("pass.pass", "r") as f:
+        with open(pass_file, "r") as f:
             stored_hash = f.readline().strip()
 
         if self.cipher.pass_hash(entered) == stored_hash:
@@ -135,7 +134,7 @@ class SettingsWindow(ctk.CTkToplevel):
             tkmsg.showinfo("Info", "Password change cancelled.")
             return
 
-        with open("pass.pass", "w") as f:
+        with open(pass_file, "w") as f:
             f.write(self.cipher.pass_hash(new_pass))
         tkmsg.showinfo("Info", "Password changed successfully.")
 
@@ -157,7 +156,7 @@ class NotesApp(ctk.CTk):
 
         # unlock app with password
         self.password = None
-        self.password_file = "pass.pass"
+        self.password_file = pass_file
 
         # unlock app with password
         self.locked = True
@@ -313,18 +312,20 @@ class NotesApp(ctk.CTk):
         so the regex for every POA would be: TODO \[\s\]\s+\w+.*
 
         """
-        self.current_note = self.textbox.get("1.0", "end-1c").strip()
+        try:
+            self.current_note = self.textbox.get("1.0", "end-1c").strip()
+            _all_notes = all_notes()
 
-        self.bma.make_activities(self.get_poas(self.current_note))
+            logging.info(
+                f"You have written {_all_notes[0]} words so far")
 
-        _all_notes = all_notes()
+            self._corpus_manager(_all_notes)
+            self.bma.make_activities(self.get_poas(self.current_note))
+        except Exception as e:
+            logging.error(f"While closing, something's happening: {e}")
 
-        logging.info(
-            f"You have written {_all_notes[0]} words so far")
-        
-        self._corpus_manager(_all_notes)
-
-        self.destroy()  # immediately close window
+        finally:
+            self.destroy()  # immediately close window
 
     def get_poas(self, current_note):
         if current_note:
@@ -334,10 +335,10 @@ class NotesApp(ctk.CTk):
                 r"\[\s?\] ?[^\.|\n]+",
                 current_note
             )
-
-        # clean them by removing the []
-        self.poas = [re.sub(r"\[\s?\]\s?", "", x) for x in self.poas]
-        return self.poas
+            logging.info(f"Found {len(self.poas)} POA's")
+            # clean them by removing the []
+            self.poas = [re.sub(r"\[\s?\]\s?", "", x) for x in self.poas]
+            return self.poas
 
     # XXX For training an AI: Experimental
     def _corpus_manager(self, _all_notes):

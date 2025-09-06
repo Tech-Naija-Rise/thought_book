@@ -25,7 +25,7 @@ import customtkinter as ctk
 import os
 import sqlite3
 import json
-
+from constants import *
 from typing import List, Dict, Optional
 
 # Put the DB next to this utils.py file
@@ -33,12 +33,6 @@ from typing import List, Dict, Optional
 # NOTES_DB = os.path.join(BASE_DIR, "notes.db")
 
 
-# Production
-_ = os.getenv("appdata")
-
-NOTES_FOLDER = os.path.join(_, "Thought Book")  # type: ignore
-os.makedirs(NOTES_FOLDER, exist_ok=True)
-NOTES_DB = os.path.join(NOTES_FOLDER, "BMTbnotes.db")
 
 
 def get_connection() -> sqlite3.Connection:
@@ -173,7 +167,6 @@ def migrate_from_json(json_path: str = "notes.json") -> int:
     return count
 
 
-RECOVERY_FILE = "recovery.key"
 
 
 def set_recovery_key(code: str):

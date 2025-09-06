@@ -2,6 +2,7 @@ import subprocess
 import sys
 import threading
 import os
+from constants import logs_file
 """
 Normally we should have permission from BMA to make changes to
 the activities in its database because we could make mistakes 
@@ -20,14 +21,22 @@ them to system environment varibles so that
 import logging
 # setup logging once (top-level of your file, before class)
 logging.basicConfig(
-    filename="logs.log",
+    filename=logs_file,
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
 
 )
 
+# Every BM app is going to put its folder in
+# the environment variables of the user's computer
+# if BMA is not installed and its env variable is not set
+# then the activities api will not work
+# Because BMA is not installed.
 
 _ = os.getenv("BMA")
+if _ is None:
+    logging.error("BMA environment variable not set.")
+    sys.exit(1)
 
 
 class ActivitiesAPI:
@@ -44,13 +53,13 @@ class ActivitiesAPI:
         self.poa_list = poa_list
 
         for actv in self.poa_list:
-            cmd = f'{_}\\BMA.exe add "{actv}"'
             try:
+                cmd = f'{_}\\BMA.exe add "{actv}"'
                 # communicate with BMA cli
                 info = subprocess.run(cmd, capture_output=True)
                 logging.info(
                     "I talked to BMA. He says: "
-                    f"{info.stdout.decode(encoding="utf-8").strip()}".strip()
+                    f"{info.stdout.decode(encoding='utf-8').strip()}".strip()
                 )
             except Exception as e:
                 logging.error(f"{e}: {cmd}")
