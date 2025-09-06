@@ -13,3 +13,4 @@ test.py
 autocompleteAI/*
 autocompleteAI/
 *.log
+ac.py

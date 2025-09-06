@@ -32,8 +32,13 @@ from typing import List, Dict, Optional
 # BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # NOTES_DB = os.path.join(BASE_DIR, "notes.db")
 
+
 # Production
-NOTES_DB = "notes.db"
+_ = os.getenv("appdata")
+
+NOTES_FOLDER = os.path.join(_, "Thought Book")  # type: ignore
+os.makedirs(NOTES_FOLDER, exist_ok=True)
+NOTES_DB = os.path.join(NOTES_FOLDER, "BMTbnotes.db")
 
 
 def get_connection() -> sqlite3.Connection:
@@ -379,15 +384,3 @@ if __name__ == "__main__":
 #         self.label.configure(text=message)
 #         self.percent.configure(text=f"{int(progress * 100)}%")
 #         self.update_idletasks()  # force UI refresh
-
-
-__all__ = [
-    "NOTES_DB",
-    "create_table",
-    "add_note",
-    "update_note",
-    "save_note",
-    "get_notes",
-    "delete_note",
-    "migrate_from_json",
-]

@@ -25,10 +25,15 @@ Usage:
 Author: Umar Mahmud
 """
 
+import datetime
+import re
+from tkinter.messagebox import askyesno
+
 import threading
 from tkinter import messagebox as tkmsg
 import sys
 import customtkinter as ctk
+from bma_express import ActivitiesAPI
 import os
 # from ac import AutoCompleterAI
 from utils import (
@@ -37,14 +42,15 @@ from utils import (
     askstring, get_notes,
     delete_note, NOTES_DB,
     save_note, set_recovery_key,
-    verify_recovery_key)
+    verify_recovery_key, all_notes)
 import logging
 
 # setup logging once (top-level of your file, before class)
 logging.basicConfig(
-    filename="training.log",
+    filename="logs.log",
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(levelname)s - %(message)s",
+
 )
 
 
@@ -137,8 +143,11 @@ class SettingsWindow(ctk.CTkToplevel):
 class NotesApp(ctk.CTk):
     def __init__(self):
         super().__init__()
-        if not os.path.exists(NOTES_DB):
-            create_table()
+        try:
+            if not os.path.exists(NOTES_DB):
+                create_table()
+        except Exception as e:
+            logging.error(f"Error while creating table: {e}")
 
         self.cipher = SimpleCipher()
         self.encrypt = self.cipher.encrypt
@@ -161,7 +170,9 @@ class NotesApp(ctk.CTk):
             else:
                 tkmsg.showerror("Error", "Incorrect password. Try again.")
         self.current_note = ""
-        self.max_words_b4_training = 3000
+        self.max_words_b4_training = 1000
+        self.focused = ctk.BooleanVar(self, False, "focused")
+
         if not self.locked:
             self.title("Thought Book")
             self.geometry("800x500")
@@ -173,7 +184,8 @@ class NotesApp(ctk.CTk):
 
             # Sidebar for notes list
             self.sidebar = ctk.CTkFrame(self, width=200, corner_radius=0)
-            self.sidebar.pack(side="left", fill="y")
+            if not self.focused.get():
+                self.sidebar.pack(side="left", fill="y")
 
             # AI coming soon
             self.suggest_label = ctk.CTkLabel(
@@ -183,7 +195,7 @@ class NotesApp(ctk.CTk):
             # self.suggest_label.pack()
 
             button_frame = ctk.CTkFrame(self.sidebar)
-            button_frame.pack(pady=5)
+            button_frame.pack(pady=5, fill="x")
 
             # Buttons
             self.add_button = ctk.CTkButton(
@@ -202,25 +214,41 @@ class NotesApp(ctk.CTk):
                 command=self.delete_note,
                 width=80,
             )
-            self.delete_button.pack(side="left", pady=5)
+            self.delete_button.pack(side="right", pady=5)
 
             self.scrollable_list = ctk.CTkScrollableFrame(
                 self.sidebar, width=200)
             self.scrollable_list.pack(fill="both", expand=True)
 
             # Example button in sidebar or menu
+            pair = ctk.CTkFrame(self.sidebar)
+            pair.pack(fill="x")
             settings_btn = ctk.CTkButton(
-                self.sidebar,
-                fg_color="#555555", text="Settings", command=lambda: SettingsWindow(self, self.cipher))
-            settings_btn.pack(pady=5)
+                pair,
+                fg_color="#555555",
+                text="Settings",
+                width=80,
+                command=lambda: SettingsWindow(self, self.cipher))
+            settings_btn.pack(side="left", pady=5)
+
+            focus_btn = ctk.CTkButton(
+                pair, fg_color="#555555",
+                width=80,
+                text="Focus",
+                command=self.focus)
+            focus_btn.pack(side="right",)
 
             self.note_buttons = []
             self.refresh_list()
 
             # Note editor
-            self.editor_frame = ctk.CTkFrame(self)
-            self.editor_frame.pack(side="right", fill="both",
-                                   expand=True, padx=10, pady=10)
+            self.right_side = ctk.CTkFrame(self, height=300)
+            self.right_side.pack(side="right", fill="both",
+                                 expand=True, padx=10)
+
+            self.editor_frame = ctk.CTkFrame(self.right_side)
+            self.editor_frame.pack(side="top",
+                                   pady=10, expand=True, fill="both")
 
             self.title_entry = ctk.CTkEntry(
                 self.editor_frame, placeholder_text="Title")
@@ -230,6 +258,12 @@ class NotesApp(ctk.CTk):
                 self.editor_frame, undo=True, wrap=ctk.WORD)
             self.textbox.pack(fill="both", expand=True, pady=5)
 
+            self.extra_bt_frame = ctk.CTkFrame(self.right_side,)
+            self.unfocus_btn = ctk.CTkButton(self.extra_bt_frame,
+                                             text="Unfocus",
+                                             width=80,
+                                             command=self.focus,
+                                             fg_color="#555555")
             self.title_entry.bind(
                 "<KeyRelease>", lambda e: self.schedule_autosave())
             self.textbox.bind(
@@ -245,32 +279,88 @@ class NotesApp(ctk.CTk):
                 # Auto-load the first saved note for convenience
                 self.load_note(0)
 
-        # self.ac = AutoCompleterAI(self, self.textbox, self.suggest_label)
-        # self.textbox.bind("<KeyRelease>", self.on_key_release)
-        # TODO: whenever i train a model, i can just bring that .pth
-        # to the modelsfolder of the package here.
+        self.bma = ActivitiesAPI()
 
-    # def on_key_release(self, event=None):
-    #     self.ac.on_key_release()
-    #     self.suggest_label.configure(text=self.ac.final_suggestion)
+    def focus(self):
+        self.focused.set(not self.focused.get())
+        if self.focused.get():
+            self.unfocus_btn.pack_forget()
+            self.extra_bt_frame.pack_forget()
+            self.sidebar.pack(side="left", fill="y")
+        else:
+            self.extra_bt_frame.pack(fill="x",
+                                     pady=5,
+                                     side="bottom")
+            self.unfocus_btn.pack(side="left")
+            self.sidebar.pack_forget()
 
     def on_close(self):
+        r"""whenever i want to close, I would check for POA's 
+        if there are any POA's in that current text, then
+        suggest whether to add them to BMA or not.
+
+        if yes, then call on BMA to add those POA's
+
+        meaning the format has to be correct
+
+        The format is simple markdown format:
+
+            [ ] what i want to do
+
+        so it would show up in BMA as a simple checkbutton with that exact
+        text as is in the POA list
+
+        so the regex for every POA would be: TODO \[\s\]\s+\w+.*
+
+        """
         self.current_note = self.textbox.get("1.0", "end-1c").strip()
-        if self.current_note:
-            try:
-                logging.info("App closing, starting training job...")
-                from utils import all_notes
-                _all_notes = all_notes()
 
-                if _all_notes[0] > self.max_words_b4_training:
-                    # This already runs in its own thread
-                    # self.ac.train_AI(_all_notes[1], _all_notes[0])
-                    pass
+        self.bma.make_activities(self.get_poas(self.current_note))
 
-            except Exception as e:
-                logging.error(f"Failed to start training: {e}")
+        _all_notes = all_notes()
+
+        logging.info(
+            f"You have written {_all_notes[0]} words so far")
+        
+        self._corpus_manager(_all_notes)
 
         self.destroy()  # immediately close window
+
+    def get_poas(self, current_note):
+        if current_note:
+            self.poas = re.findall(
+                # find anything that follows []
+                # and is before a newline or full stop
+                r"\[\s?\] ?[^\.|\n]+",
+                current_note
+            )
+
+        # clean them by removing the []
+        self.poas = [re.sub(r"\[\s?\]\s?", "", x) for x in self.poas]
+        return self.poas
+
+    # XXX For training an AI: Experimental
+    def _corpus_manager(self, _all_notes):
+        corpus_file = f"corpus_{datetime.datetime.now().date()}.txt"
+        try:
+            if (_all_notes[0] > self.max_words_b4_training) and (
+                (_all_notes[0] % self.max_words_b4_training >= 0
+                 ) and (
+                     _all_notes[0] % self.max_words_b4_training <= 500)):
+                # This already runs in its own thread
+                # self.ac.train_AI(_all_notes[1], _all_notes[0])
+                if askyesno("Fine-tune ready",
+                            "You've written approximately "
+                            f"{_all_notes[0]} new words. "
+                            "Save all notes as corpus?"):
+                    with open(
+                            corpus_file,
+                            "w") as f:
+                        f.write(_all_notes[1])
+                    logging.info(
+                        f"Done making corpus at {os.path.abspath(corpus_file)}")
+        except Exception as e:
+            logging.error(f"Failed to start training: {e}")
 
     def schedule_autosave(self):
         """Schedule autosave after a delay to avoid excessive saves."""
@@ -394,6 +484,12 @@ class NotesApp(ctk.CTk):
         """Save the note being edited (or a specific index)"""
         idx = index_to_save if index_to_save is not None else self.current_index
         content = self.textbox.get("1.0", "end-1c").strip()
+
+        # try:
+        #     self.bma.make_activities(self.get_poas(content))
+        # except Exception as e:
+        #     logging.error(f"{e}")
+
         content = self.encrypt(content)
         title = self.title_entry.get()
 
@@ -435,10 +531,12 @@ class NotesApp(ctk.CTk):
         self.title_entry.select_range(0, "end")
         self.title_entry.focus()
 
+
 def main():
     ctk.set_appearance_mode("dark")
     app = NotesApp()
     app.mainloop()
+
 
 if __name__ == "__main__":
     main()

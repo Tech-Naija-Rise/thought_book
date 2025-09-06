@@ -1,6 +1,7 @@
 
+# BM (Bobsi Mo) A System of Interconnected Apps
 
-# 📝 Thought Book (NotesApp)
+## 📝 BM Thought Book (NotesApp)
 
 A **simple, secure note-taking application** built with **CustomTkinter**.
 It provides a clean and modern interface for creating, editing, and managing notes with lightweight encryption and password protection.
@@ -24,9 +25,7 @@ It provides a clean and modern interface for creating, editing, and managing not
 
 ## 🔮 Planned Extensions
 
-* Persistent storage with SQLite (currently JSON).
 * Dark/Light theme toggle.
-* Global hotkeys for creating/saving notes (`Ctrl+N`, `Ctrl+S`).
 * Search and filtering inside the sidebar.
 
 ---
@@ -58,12 +57,12 @@ It provides a clean and modern interface for creating, editing, and managing not
    This will:
 
    * Bundle the app into a standalone `.exe` (via PyInstaller).
-   * Create a Desktop shortcut (`NotesApp.lnk`) with a hotkey (default: `Ctrl+Alt+N`).
+   * Create a Desktop shortcut (`NotesApp.lnk`) with a hotkey (default: `Ctrl+Alt+T`).
 
 4. **Launch the app**
 
    * Use the Desktop shortcut
-   * Or run directly from `dist/notes_app.exe`.
+   * Or run directly from `dist\Thought Book.exe`.
 
 ---
 
@@ -71,7 +70,7 @@ It provides a clean and modern interface for creating, editing, and managing not
 
 * On first launch, you’ll be asked to **create a password**.
 * You’ll also be prompted to set a **recovery code** (write it down somewhere safe!).
-* Notes are stored in `notes.json` and protected with light substitution + SHA-256 password hashing.
+* Notes are stored in `BMTbnotes.db` and the contents are protected with a light substitution cipher.
 
 ---
 
@@ -81,7 +80,7 @@ It provides a clean and modern interface for creating, editing, and managing not
 Thought_Book/
 │── deploy.py        # Deployment script (builds exe + shortcut)
 │── notes_app.py     # Main NotesApp source code
-│── notes.json       # Saved notes (auto-created)
+│── utils.py         #SQLite helper
 │── pass.pass        # Stored password hash
 │── recovery.key     # Recovery code hash
 │── README.md        # Project documentation
@@ -101,3 +100,5 @@ Created by **Umar Mahmud**
 * Tested on **Windows only** (due to shortcut + hotkey support).
 * If you rerun `deploy.py`, it cleans old builds and generates a fresh `.exe`.
 * Default hotkey can be changed in `deploy.py`.
+* The `BMTbnotes.db` database is universally stored in your system's appdata folder in `roaming` folder (try pressing Windows + R and then typing `appdata`)
+* For tips on how to backup your notes, [read the docs](./docs/app_usage.md)

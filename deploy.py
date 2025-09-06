@@ -17,7 +17,7 @@ def build_exe(script_path):
         [f"--hidden-import {mod}" for mod in hidden_imports])
 
 
-    cmd = f'pyinstaller --noconfirm -n "{app_name}" --onefile --noconsole "{script_path}"'
+    cmd = f'pyinstaller --noconfirm -n "{app_name}" --onefile --hide-console hide-early "{script_path}"'
     print(cmd)
     os.system(cmd)
 
