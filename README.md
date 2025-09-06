@@ -101,4 +101,4 @@ Created by **Umar Mahmud**
 * If you rerun `deploy.py`, it cleans old builds and generates a fresh `.exe`.
 * Default hotkey can be changed in `deploy.py`.
 * The `BMTbnotes.db` database is universally stored in your system's appdata folder in `roaming` folder (try pressing Windows + R and then typing `appdata`)
-* For tips on how to backup your notes, [read the docs](./docs/app_usage.md)
+* For tips on how to backup your notes, [read the docs](./docs/how_to.md)
