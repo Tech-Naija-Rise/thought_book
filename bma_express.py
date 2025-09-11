@@ -33,9 +33,12 @@ logging.basicConfig(
 # then the activities api will not work
 # Because BMA is not installed.
 
-_ = os.getenv("BMA")
+_ = os.getenv("BMA", None)
 if _ is None:
-    logging.error("BMA environment variable not set.")
+    logging.error(
+        "BMA environment variable not set. BMA must be installed. "
+        "Trigger BMA install suggestion to user through tkmsg. Exiting..."
+    )
     sys.exit(1)
 
 

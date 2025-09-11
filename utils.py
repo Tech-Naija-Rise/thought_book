@@ -17,7 +17,6 @@ USAGE:
 
 Notes: this module expects the caller to handle encryption/decryption of `content`.
 """
-
 import re
 import hashlib
 import string
@@ -27,12 +26,39 @@ import sqlite3
 import json
 from constants import *
 from typing import List, Dict, Optional
+import winreg
 
+import winreg
+import logging
+# setup logging once (top-level of your file, before class)
+logging.basicConfig(
+    filename=logs_file,
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+
+)
+
+def set_user_env_var(name, value):
+    reg_path = r"Environment"
+    reg_key = winreg.OpenKey(
+        winreg.HKEY_CURRENT_USER,
+        reg_path,
+        0,
+        winreg.KEY_SET_VALUE
+    )
+    winreg.SetValueEx(reg_key, name, 0, winreg.REG_SZ, value)
+    winreg.CloseKey(reg_key)
+    logging.info(f"[+] User variable {name} set to {value}")
+
+
+# Example usage
+if not os.getenv("BMTb"):
+    set_user_env_var("BMTb", os.path.abspath("."))
+else:
+    logging.warning("BMTb env variable already set.")
 # Put the DB next to this utils.py file
 # BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # NOTES_DB = os.path.join(BASE_DIR, "notes.db")
-
-
 
 
 def get_connection() -> sqlite3.Connection:
@@ -165,8 +191,6 @@ def migrate_from_json(json_path: str = "notes.json") -> int:
         count += 1
 
     return count
-
-
 
 
 def set_recovery_key(code: str):
