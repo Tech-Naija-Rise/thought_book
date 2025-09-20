@@ -16,7 +16,7 @@ I often wanted to capture a thought quickly, but:
 - Works fully offline.  
 - Encrypts notes for privacy.  
 - Backups to Google Drive (lightly encrypted).  
-
+[Download Thought Book app](https://github.com/Mahmudumar/thought_book/releases/latest)
 ---
 
 ## 🖼️ Demo  

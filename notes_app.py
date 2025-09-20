@@ -25,24 +25,36 @@ Usage:
 Author: Umar Mahmud
 """
 
-from constants import *
-import datetime
+import threading
+from scripts.feedback_collection import FeedbackAPI
 import re
-from tkinter.messagebox import askyesno
-from tkinter import messagebox as tkmsg
-import sys
-import customtkinter as ctk
-from bma_express import ActivitiesAPI
 import os
-# from ac import AutoCompleterAI
-from utils import (
+import sys
+import logging
+import datetime
+from tkinter import messagebox as tkmsg
+from tkinter.messagebox import askyesno
+
+
+import customtkinter as ctk
+
+
+from scripts.constants import (
+    logs_file,
+    pass_file,
+    BMTb_DOWNLOAD_LINK
+)
+from scripts.bma_express import ActivitiesAPI
+from scripts.utils import (
     SimpleCipher,
     create_table,
     askstring, get_notes,
     delete_note, NOTES_DB,
     save_note, set_recovery_key,
-    verify_recovery_key, all_notes)
-import logging
+    verify_recovery_key, all_notes,
+    has_internet
+)
+from scripts.settings import SettingsWindow
 
 # setup logging once (top-level of your file, before class)
 logging.basicConfig(
@@ -51,92 +63,6 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
 
 )
-
-
-class SettingsWindow(ctk.CTkToplevel):
-    """Settings GUI window for NotesApp."""
-
-    def __init__(self, parent, cipher):
-        super().__init__(parent)
-        self.title("Settings")
-        self.geometry("300x350")
-        # add a scrollable
-        self.resizable(False, True)
-        self.transient(parent)   # Tie dialog to parent (only on top of it)
-        self.grab_set()   # make modal
-
-        self.cipher = cipher
-        self.parent = parent
-
-        # Change password section
-        ctk.CTkLabel(self, text="Change Password").pack(pady=(20, 5))
-        self.change_pass_btn = ctk.CTkButton(
-            self, text="Change Password", command=self.change_password)
-        self.change_pass_btn.pack(pady=5)
-
-        # Divider
-        ctk.CTkLabel(self, text="Notes Management").pack(pady=(20, 5))
-
-        # Clear all notes button
-        self.clear_notes_btn = ctk.CTkButton(
-            self,
-            text="Clear All Notes",
-            fg_color="red",
-            hover_color="darkred",
-            command=self.confirm_clear_all
-        )
-        self.clear_notes_btn.pack(pady=5)
-
-    def confirm_clear_all(self):
-        dialog = ctk.CTkInputDialog(
-            text="Type 'YES' to delete ALL notes permanently:",
-            title="Confirm Clear All"
-        )
-        answer = dialog.get_input()
-        if answer and answer.strip().upper() == "YES":
-            from utils import clear_all_notes
-            clear_all_notes()
-            self.parent.notes.clear()
-            self.parent.refresh_list()
-            self.parent.title_entry.delete(0, "end")
-            self.parent.textbox.delete("1.0", "end")
-            self.parent.current_index = None
-            tkmsg.showinfo("Success", "All notes deleted successfully!")
-
-    def verify_current_password(self):
-        """Ask user to enter current password for verification."""
-        if not os.path.exists(pass_file):
-            tkmsg.showerror("Error", "No password set yet.")
-            return False
-
-        entered = askstring(
-            "Verify Password", "Enter current password:", show="*")
-        if entered is None:
-            return False
-
-        with open(pass_file, "r") as f:
-            stored_hash = f.readline().strip()
-
-        if self.cipher.pass_hash(entered) == stored_hash:
-            return True
-        else:
-            tkmsg.showerror("Error", "Incorrect password.")
-            return False
-
-    def change_password(self):
-        """Change the app password."""
-        if not self.verify_current_password():
-            return
-
-        new_pass = askstring(
-            "New Password", "Enter new password:", show="*")
-        if not new_pass:
-            tkmsg.showinfo("Info", "Password change cancelled.")
-            return
-
-        with open(pass_file, "w") as f:
-            f.write(self.cipher.pass_hash(new_pass))
-        tkmsg.showinfo("Info", "Password changed successfully.")
 
 
 class NotesApp(ctk.CTk):
@@ -271,6 +197,9 @@ class NotesApp(ctk.CTk):
                 "<Return>", lambda e: self.textbox.focus_set())
             self.wm_protocol("WM_DELETE_WINDOW", self.on_close)
 
+            # inside __init__ after creating textbox
+            self.textbox.bind("<Return>", self.handle_multiline)
+
             # Only add a blank note if no notes exist yet
             if not self.notes:
                 self.add_note()
@@ -294,7 +223,7 @@ class NotesApp(ctk.CTk):
             self.sidebar.pack_forget()
 
     def on_close(self):
-        r"""whenever i want to close, I would check for POA's 
+        r"""whenever i want to close, I would check for POA's
         if there are any POA's in that current text, then
         suggest whether to add them to BMA or not.
 
@@ -319,12 +248,13 @@ class NotesApp(ctk.CTk):
             logging.info(
                 f"You have written {_all_notes[0]} words so far")
 
-            self._corpus_manager(_all_notes)
             self.bma.make_activities(self.get_poas(self.current_note))
         except Exception as e:
             logging.error(f"While closing, something's happening: {e}")
 
         finally:
+            logging.info(
+                f"Currently threads running are: {threading.active_count()}")
             self.destroy()  # immediately close window
 
     def get_poas(self, current_note):
@@ -515,6 +445,25 @@ class NotesApp(ctk.CTk):
 
         self.refresh_list()
 
+    def handle_multiline(self, event=None):
+        # Get current line
+        index = self.textbox.index("insert linestart")
+        line_text = self.textbox.get(index, f"{index} lineend")
+
+        if line_text.strip().startswith("-"):
+            if line_text.strip() == "-":
+                # Case: empty bullet line, exit bullet mode
+                self.textbox.delete(index, f"{index} lineend")
+                self.textbox.insert("insert", "\n")
+                return "break"
+            else:
+                # Continue bullet list
+                self.textbox.insert("insert", "\n- ")
+                return "break"
+
+        # default: allow normal Enter
+        return
+
     def add_note(self):
         """Create a new note, saving current note first"""
         if self.current_index is not None:
@@ -532,6 +481,12 @@ class NotesApp(ctk.CTk):
         self.title_entry.select_range(0, "end")
         self.title_entry.focus()
 
+    def check_updates(self):
+        """Check for updates from DOWNLOAD link"""
+        if has_internet():
+            # check for the updates
+            pass
+
 
 def main():
     ctk.set_appearance_mode("dark")
@@ -540,4 +495,41 @@ def main():
 
 
 if __name__ == "__main__":
+    # THIS IS THE MAIN ENTRY POINT OF THE ENTIRE PROJECT
     main()
+
+
+"""
+# Tasks for saturday
+
+2. add feedback system 
+    [] write fastAPI server locally
+    [] push to gh
+    [] create a web service on render
+    [] GET PUBLIC URL
+    [] use URL in notes app when user hits send feedback
+        [] if online, send immediately
+        [] if offline save locally and retry later
+         
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+3. add auto check for updates
+    [] make a website
+
+    
+"""

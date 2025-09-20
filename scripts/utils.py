@@ -24,7 +24,7 @@ import customtkinter as ctk
 import os
 import sqlite3
 import json
-from constants import *
+from .constants import *
 from typing import List, Dict, Optional
 import winreg
 
@@ -37,6 +37,7 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
 
 )
+
 
 def set_user_env_var(name, value):
     reg_path = r"Environment"
@@ -56,9 +57,6 @@ if not os.getenv("BMTb"):
     set_user_env_var("BMTb", os.path.abspath("."))
 else:
     logging.warning("BMTb env variable already set.")
-# Put the DB next to this utils.py file
-# BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# NOTES_DB = os.path.join(BASE_DIR, "notes.db")
 
 
 def get_connection() -> sqlite3.Connection:
@@ -92,6 +90,20 @@ def create_table() -> None:
         )
         conn.commit()
 
+def create_fb_tb():
+    with get_connection() as conn:
+        c = conn.cursor()
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS feedback (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL,
+            body TEXT NOT NULL,
+            );
+            """
+        )
+        conn.commit()
 
 def add_note(title: str, content: str) -> int:
     """Insert a new note. Returns the new note id."""
@@ -364,8 +376,13 @@ def all_notes():
     total = count_words_in_string(all_notes)
     del decode
     return total, all_notes
-
-
+import requests
+def has_internet():
+    try:
+        requests.get("https://www.google.com", timeout=3)
+        return True
+    except:
+        return False
 if __name__ == "__main__":
     print(all_notes())
 
