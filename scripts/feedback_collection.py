@@ -51,7 +51,7 @@ class FeedbackAPI(ctk.CTkToplevel):
                                pady=10, expand=True, fill="both")
 
         self.name_entry = ctk.CTkEntry(
-            self.credentials_frame, placeholder_text="Your Full Name")
+            self.credentials_frame, placeholder_text="Your Full Name (Optional)")
         self.name_entry.pack(expand=1, fill="x")
 
         self.email_entry = ctk.CTkEntry(
