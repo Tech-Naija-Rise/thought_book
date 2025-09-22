@@ -49,7 +49,7 @@ from scripts.utils import (
     askstring, get_notes,
     delete_note, NOTES_DB,
     save_note, set_recovery_key,
-    verify_recovery_key, all_notes,
+    verify_recovery_key,
     has_internet
 )
 from scripts.settings import SettingsWindow

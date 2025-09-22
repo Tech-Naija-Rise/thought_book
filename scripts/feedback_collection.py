@@ -38,6 +38,7 @@ class FeedbackAPI(ctk.CTkToplevel):
         self.transient(self.parent)
         self.title(f"BM - Give feedback")
         self.geometry("500x400")
+        self.wm_protocol("WM_DELETE_WINDOW", self.on_close)
 
         self.help = ctk.CTkLabel(
             self, text="Report Issues, suggest feedback, or provide general feedback here")
@@ -70,14 +71,19 @@ class FeedbackAPI(ctk.CTkToplevel):
             self.actions_frame, width=30, text="Send Feedback",
             command=self.save_or_send)
         self.send_btn.pack(side="right", padx=5)
+
         self.cancel_btn = ctk.CTkButton(self.actions_frame,
                                         width=30,
                                         text="Cancel",
                                         fg_color="#555555",
-                                        command=self.destroy)
+                                        command=self.on_close)
         self.cancel_btn.pack(side="right", padx=5)
 
-        self.b_email_addr = "technaijarise@gmail.com"
+        self.helper = ctk.CTkLabel(
+            self.actions_frame,
+            text_color="orange")
+        self.helper.pack(pady=10)
+        self.helper.configure(text="")
 
         # Automatically check for internet in the background
         # and send feedback if there is any saved
@@ -121,7 +127,7 @@ class FeedbackAPI(ctk.CTkToplevel):
             return self.data, False
 
         return self.data, True
-    
+
     def get_app_log(self):
         """Return the last 100 lines of the app log file."""
         log_path = pathlib.Path(logs_file)
@@ -134,7 +140,30 @@ class FeedbackAPI(ctk.CTkToplevel):
                 logging.error(f"Error reading log file: {e}")
                 return "Could not read log file."
         return "Log file does not exist."
-    
+
+    def connected_to_server(self, url=BMTb_FEEDBACK_SERVER):
+        try:
+            logging.info(f"Attempting to connect to server at '{url}'")
+            response = requests.get(url, timeout=3)
+
+            if response.status_code == 200:
+                logging.info("Connected to server successfully!")
+                return True
+            else:
+                logging.warning(
+                    f"Server responded with status code: {response.status_code}")
+                return False
+
+        except requests.Timeout:
+            logging.error("Connection timed out.")
+            return False
+        except requests.ConnectionError:
+            logging.error("Failed to connect to server.")
+            return False
+        except requests.RequestException as e:
+            logging.error(f"An unexpected error occurred: {e}")
+            return False
+
     def send_feedback(self, data={}, url=BMTb_FEEDBACK_SERVER):
         """This function is called from the GUI and
         as long as there is internet, it usually works well"""
@@ -144,43 +173,79 @@ class FeedbackAPI(ctk.CTkToplevel):
         else:
             self.data = data
 
-        r = requests.post(
-            url, json=self.data, timeout=3)
-        if r.json().get("status") == "feedback_received":
-            logging.info("Feedback sent to server!")
-            return True
-        else:
-            logging.error(
-                "Feedback not sent or server returned error check logs of server")
-            return False
-        
+        # First test for the connection to the server
+        if self.connected_to_server():
+            r = requests.post(
+                url, json=self.data, timeout=3)
+
+            if ((r.status_code == 200)):
+                logging.info("Feedback sent to server!")
+                return True
+            elif r.status_code == 503:
+                logging.error("Server is down temporarily")
+                return None
+            else:
+                logging.error(
+                    "Feedback not sent or server "
+                    "returned error check "
+                    "logs of server")
+                return False
+
     def save_or_send(self):
         threading.Thread(
             target=self._save_or_send,
             name="Feedback save or send",
             daemon=True).start()
-        
+
     def _save_or_send(self):
         """Save this feedback locally for sending later
         or send it right now through email.
         """
         if self._validate()[1]:  # type: ignore
+            self.helper.configure(
+                text="Processing... Please don't close this window")
             if has_internet():
                 # if i have internet, then do this through gmail directly.
-                self.send_feedback()
-                tkmsg.showinfo("Feedback sent",
-                               "Thank you for your feedback!")
-                self.destroy()
+                s = self.send_feedback()
+                if s:
+                    self.helper.configure(
+                        text="Sent feedback.", text_color="#10f910")
+                    tkmsg.showinfo("Feedback sent",
+                                   "Thank you for your feedback!")
+                    self.on_close()
+                elif s == None:
+                    self.helper.configure(
+                        text="There's a problem on our end. "
+                        "Will retry later.",
+                        text_color="#ff2525")
+                    logging.error(f"Server error, will save feedback locally.")
+
+                    self.save_locally()
+
+                    tkmsg.showwarning(
+                        "Server error occured",
+                        "There's a problem on our end. "
+                        "We'll save your feedback locally "
+                        "and try to send it later."
+                    )
+                    self.on_close()
+
             else:
                 # locally store feedback because offline
                 logging.error("No connection, will save feedback locally.")
+                self.helper.configure(
+                    text="You are currently offline. Saving locally...")
                 self.save_locally()
                 tkmsg.showinfo(
-            "Feedback will be saved for later",
-            "You are offline now. We've saved "
-            "your feedback and will send it when "
-            "you are online.")
-                self.destroy()
+                    "Feedback will be saved for later",
+                    "You are offline now. We've saved "
+                    "your feedback and will send it when "
+                    "you are online.")
+                self.on_close()
+        
+    def on_close(self):
+        """what to do before closing"""
+        self.after(500, self.destroy)
 
     def save_locally(self, data={}):
         """Append the latest feedback to the end of 
@@ -228,14 +293,25 @@ class FeedbackAPI(ctk.CTkToplevel):
             # XXX
             if saved_feedbacks and has_internet():
                 logging.info(
-                    f"Sending {len(saved_feedbacks)} saved feedback(s)...")
+                    f"Sending {len(saved_feedbacks)} saved feedback(s)..."
+                )
                 for fb in saved_feedbacks:
-                    if self.send_feedback(fb):
-                        logging.info("Sent feedback successfully")
-                    else:
+                    try:
+                        s = self.send_feedback(fb)
+                        if s:
+                            logging.info("Sent feedback successfully")
+                            self.clear_saved()
+                        elif s == None:
+                            logging.error(
+                                "Failed to connect to server."
+                            )
+                        else:
+                            logging.error(
+                                "Failed to send feedback; will retry later")
+                    except Exception as e:
                         logging.error(
-                            "Failed to send feedback; will retry later")
-                self.clear_saved()
+                            f"Failed to send feedback; will retry later\n{e}")
+                        break  # stop trying to send more if one fails
 
             elif not saved_feedbacks:
                 break
