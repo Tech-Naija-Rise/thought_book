@@ -6,6 +6,7 @@ __all__ = ["NOTES_DB", "NOTES_FOLDER",
            "RECOVERY_FILE", "pass_file",
            "data_folder", "logs_file", "BMA_DOWNLOAD_LINK"]
 
+app_name = "Thought Book"
 
 data_folder = os.getenv("appdata")
 NOTES_FOLDER = os.path.join(data_folder, "Thought Book")  # type: ignore
@@ -34,4 +35,7 @@ logging.basicConfig(
 
 # XXX this link will change once i setup the app's git site.
 BMA_DOWNLOAD_LINK = "https://github.com/Mahmudumar/BMA/releases/latest"
+
+
 BMTb_DOWNLOAD_LINK = "https://github.com/Mahmudumar/thought_book/releases"
+BMTb_FEEDBACK_SERVER = "https://feedback-server-tnr.onrender.com/feedback"

@@ -6,12 +6,12 @@ from pathlib import Path
 import win32com.client
 
 
-app_name = "Thought Book"
+from scripts.constants import app_name
 
 
 def build_exe(script_path):
     script_path = Path(script_path).resolve()
-    cmd = f'pyinstaller --noconfirm -n "{app_name}" --onefile --hide-console hide-early "{script_path}"'
+    cmd = f'pyinstaller --noconfirm -n "{app_name}" --noconsole "{script_path}"'
     print(cmd)
     os.system(cmd)
 
@@ -22,8 +22,8 @@ def build_exe(script_path):
             shutil.rmtree(p, ignore_errors=True)
         elif p.is_file():
             p.unlink(missing_ok=True)
-
-    return script_path.parent / "dist" / (app_name + ".exe")
+# dist\Thought Book\Thought Book.exe
+    return script_path.parent / "dist" / f"{app_name}" / (app_name + ".exe")
 
 
 def create_shortcut(target, shortcut_path, hotkey=None, workdir=None, description="", icon=None):

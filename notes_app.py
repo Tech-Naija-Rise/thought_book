@@ -26,7 +26,6 @@ Author: Umar Mahmud
 """
 
 import threading
-from scripts.feedback_collection import FeedbackAPI
 import re
 import os
 import sys
@@ -42,7 +41,6 @@ import customtkinter as ctk
 from scripts.constants import (
     logs_file,
     pass_file,
-    BMTb_DOWNLOAD_LINK
 )
 from scripts.bma_express import ActivitiesAPI
 from scripts.utils import (
@@ -242,12 +240,6 @@ class NotesApp(ctk.CTk):
 
         """
         try:
-            self.current_note = self.textbox.get("1.0", "end-1c").strip()
-            _all_notes = all_notes()
-
-            logging.info(
-                f"You have written {_all_notes[0]} words so far")
-
             self.bma.make_activities(self.get_poas(self.current_note))
         except Exception as e:
             logging.error(f"While closing, something's happening: {e}")
@@ -298,7 +290,7 @@ class NotesApp(ctk.CTk):
         if self.autosave_after_id:  # cancel previous timer
             self.after_cancel(self.autosave_after_id)
         self.autosave_after_id = self.after(
-            500, self.save_current_note)  # 5s delay
+            500, self.save_current_note)
 
     def load_notes(self) -> list:
         """Load notes from SQLite database"""
@@ -416,11 +408,7 @@ class NotesApp(ctk.CTk):
         idx = index_to_save if index_to_save is not None else self.current_index
         content = self.textbox.get("1.0", "end-1c").strip()
 
-        # try:
-        #     self.bma.make_activities(self.get_poas(content))
-        # except Exception as e:
-        #     logging.error(f"{e}")
-
+        # This line is hackable but not from outside
         content = self.encrypt(content)
         title = self.title_entry.get()
 
@@ -503,13 +491,13 @@ if __name__ == "__main__":
 # Tasks for saturday
 
 2. add feedback system 
-    [] write fastAPI server locally
-    [] push to gh
-    [] create a web service on render
-    [] GET PUBLIC URL
-    [] use URL in notes app when user hits send feedback
-        [] if online, send immediately
-        [] if offline save locally and retry later
+    [x] write fastAPI server locally
+    [x] push to gh
+    [x] create a web service on render
+    [x] GET PUBLIC URL
+    [x] use URL in notes app when user hits send feedback
+        [x] if online, send immediately
+        [x] if offline save locally and retry later
          
 
     

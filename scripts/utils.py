@@ -17,6 +17,7 @@ USAGE:
 
 Notes: this module expects the caller to handle encryption/decryption of `content`.
 """
+import requests
 import re
 import hashlib
 import string
@@ -90,6 +91,7 @@ def create_table() -> None:
         )
         conn.commit()
 
+
 def create_fb_tb():
     with get_connection() as conn:
         c = conn.cursor()
@@ -104,6 +106,7 @@ def create_fb_tb():
             """
         )
         conn.commit()
+
 
 def add_note(title: str, content: str) -> int:
     """Insert a new note. Returns the new note id."""
@@ -224,7 +227,8 @@ class SimpleCipher:
     """
     find a way to encrypt even the key itself
     so that a person cannot use a program to hack and decode
-    the notes"""
+    the notes
+    """
 
     def __init__(self, key=3) -> None:
         self.alphabet = string.ascii_lowercase
@@ -366,6 +370,8 @@ def all_notes():
     the experimental AI to use 
     to know when to finetune its model
 
+    WARNING: This removes encryption
+
     """
     all_notes = ""
     decode = SimpleCipher().decrypt
@@ -376,15 +382,19 @@ def all_notes():
     total = count_words_in_string(all_notes)
     del decode
     return total, all_notes
-import requests
+
+
 def has_internet():
     try:
         requests.get("https://www.google.com", timeout=3)
         return True
     except:
         return False
+
+
 if __name__ == "__main__":
-    print(all_notes())
+    # print(all_notes())
+    pass
 
 
 # class TrainingUI(ctk.CTk):

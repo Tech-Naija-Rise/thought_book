@@ -19,7 +19,6 @@ class SettingsWindow(ctk.CTkToplevel):
         # add a scrollable
         self.resizable(False, True)
         self.transient(parent)   # Tie dialog to parent (only on top of it)
-        
 
         self.cipher = cipher
         self.parent = parent
@@ -43,17 +42,16 @@ class SettingsWindow(ctk.CTkToplevel):
         )
         self.clear_notes_btn.pack(pady=5)
 
-        
         # Feedback area
         ctk.CTkLabel(self, text="Feedback and Help").pack(pady=(20, 5))
         self.feedback_btn = ctk.CTkButton(
             self, text="Give feedback", command=self.feedback_collect)
         self.feedback_btn.pack(pady=5)
 
-
     def feedback_collect(self, event=None):
-        self.feedbackAPI =FeedbackAPI()
-        self.feedbackAPI.start() 
+        self.feedbackAPI = FeedbackAPI(self)
+        # i am settings window, this is my brother
+        self.feedbackAPI.start()
 
     def confirm_clear_all(self):
         dialog = ctk.CTkInputDialog(
@@ -71,13 +69,16 @@ class SettingsWindow(ctk.CTkToplevel):
             tkmsg.showinfo("Success", "All notes deleted successfully!")
 
     def verify_current_password(self):
-        """Ask user to enter current password for verification."""
+        """Ask user to enter current password for verification.
+        But allow for him to enter his recovery code to make it
+        easier
+        """
         if not os.path.exists(pass_file):
             tkmsg.showerror("Error", "No password set yet.")
             return False
 
         entered = askstring(
-            "Verify Password", "Enter current password:", show="*")
+            "Verify Password", "Enter current password (or recovery code):", show="*")
         if entered is None:
             return False
 

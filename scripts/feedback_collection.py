@@ -11,20 +11,21 @@ app so that the process of feedback collection is easier
 
 """
 
-import urllib.parse
+from datetime import datetime
 import json
 import os
 import threading
 import pathlib
 import time
 import customtkinter as ctk
+import requests
 
-from .constants import logging, fb_path, tkmsg
-from .utils import has_internet, create_fb_tb
+from .constants import logging, fb_path, logs_file, tkmsg, app_name, BMTb_FEEDBACK_SERVER
+from .utils import has_internet
 
 
-class FeedbackAPI(ctk.CTk):
-    def __init__(self) -> None:
+class FeedbackAPI(ctk.CTkToplevel):
+    def __init__(self, parent=None) -> None:
         """Collect feedback from offline and when the user
         gets online, then just send it to the developer through
         email.
@@ -32,7 +33,9 @@ class FeedbackAPI(ctk.CTk):
         But inform the user that you will be checking when they
         get online so that the feedback can be sent.
         """
-        super().__init__()
+        self.parent = parent
+        super().__init__(self.parent)
+        self.transient(self.parent)
         self.title(f"BM - Give feedback")
         self.geometry("500x400")
 
@@ -53,7 +56,7 @@ class FeedbackAPI(ctk.CTk):
 
         self.email_entry = ctk.CTkEntry(
             self.credentials_frame,
-            placeholder_text="your email (to receive updates)")
+            placeholder_text="We need your email to notify you if we have a fix.")
         self.email_entry.pack(expand=1, fill="x")
 
         self.textbox = ctk.CTkTextbox(
@@ -76,84 +79,137 @@ class FeedbackAPI(ctk.CTk):
 
         self.b_email_addr = "technaijarise@gmail.com"
 
+        # Automatically check for internet in the background
+        # and send feedback if there is any saved
+        # otherwise, just end thread
         threading.Thread(name="Background internet check",
                          target=self.check_periodically,
                          daemon=True).start()
 
-    def parse_feedbacks(self):
-        """Go through the file and give back a long string
-        with all the feedbacks"""
-        parsed = ""
+    def get_saved(self):
+        """Return list of locally saved feedbacks."""
         if os.path.exists(fb_path):
-            with open(fb_path) as r:
-                obj = json.load(r)
-            for fb in obj:
-                name = fb["name"]
-                email = fb["email"]
-                body = fb["body"]
-
-                title = rf"BMTb User Feedback from {name}"
-                body = f"{body}\n\n\nSend the updates to user's email after addressing issue: "
-
-                final_link = f"&to={self.b_email_addr}"
-                f"&su={urllib.parse.quote(title)}"
-                f"&body={urllib.parse.quote(body)}{email}{urllib.parse.quote("\n")}"
-                
-                parsed += final_link
-
-        print(parsed)
-        return parsed
+            with open(fb_path, "r") as r:
+                try:
+                    return json.load(r)
+                except json.JSONDecodeError:
+                    return []
+        return []
 
     def start(self):
         self.mainloop()
 
     def _validate(self):
-        self.user_name = self.name_entry.get()
-        self.email_name = self.email_entry.get()
-        self.body = self.textbox.get("1.0", "end")
+        """Validate user input and return feedback data."""
+        self.user_name = self.name_entry.get().strip()
+        self.email_name = self.email_entry.get().strip()
+        self.body = self.textbox.get("1.0", "end-1c").strip()
 
-        # The name is required
-        if self.name_entry.get().strip():
-            # print(self.user_name.strip())
+        self.data = {
+            "app_name": app_name,
+            "user_name": self.user_name,
+            "follow_up": self.email_name,
+            "user_feedback": self.body,
+            "timestamp": datetime.now().strftime("%d-%m-%Y, %H:%M:%S"),
+            "user_app_log": self.get_app_log()
+        }
+
+        if not self.body or not self.email_name:
+            tkmsg.showerror("Fields required",
+                            "Your email and feedback are required")
+            logging.info("Validation failed: empty name or feedback")
+            return self.data, False
+
+        return self.data, True
+    
+    def get_app_log(self):
+        """Return the last 100 lines of the app log file."""
+        log_path = pathlib.Path(logs_file)
+        if log_path.exists():
+            try:
+                with open(log_path, "r") as log_file:
+                    lines = log_file.readlines()
+                    return "".join(lines[-100:])  # Return last 100 lines
+            except Exception as e:
+                logging.error(f"Error reading log file: {e}")
+                return "Could not read log file."
+        return "Log file does not exist."
+    
+    def send_feedback(self, data={}, url=BMTb_FEEDBACK_SERVER):
+        """This function is called from the GUI and
+        as long as there is internet, it usually works well"""
+
+        if not data:
+            self.data = self._validate()[0]
+        else:
+            self.data = data
+
+        r = requests.post(
+            url, json=self.data, timeout=3)
+        if r.json().get("status") == "feedback_received":
+            logging.info("Feedback sent to server!")
             return True
         else:
+            logging.error(
+                "Feedback not sent or server returned error check logs of server")
             return False
-
+        
     def save_or_send(self):
+        threading.Thread(
+            target=self._save_or_send,
+            name="Feedback save or send",
+            daemon=True).start()
+        
+    def _save_or_send(self):
         """Save this feedback locally for sending later
         or send it right now through email.
         """
-
-        if has_internet():
-            # if i have internet, then do this through gmail directly.
-            if self._validate():
-                self.open_gmail(self.user_name,
-                                self.email_name,
-                                self.body)
-        else:
-            # locally store feedback
-            logging.error("No connection, will save feedback locally.")
-
-            if self._validate():
-                self.save_locally(self.user_name, self.email_name, self.body)
-                tkmsg.showinfo(
-                    "Feedback will be saved for later",
-                    "Offline? No problem. We've saved "
-                    "your feedback and will send it when "
-                    "you are online.")
-
+        if self._validate()[1]:  # type: ignore
+            if has_internet():
+                # if i have internet, then do this through gmail directly.
+                self.send_feedback()
+                tkmsg.showinfo("Feedback sent",
+                               "Thank you for your feedback!")
                 self.destroy()
-                logging.info("Feedback area destroyed")
             else:
-                tkmsg.showerror("Name required",
-                                "Your name and feeback are required")
-                logging.info("Empty fields.")
+                # locally store feedback because offline
+                logging.error("No connection, will save feedback locally.")
+                self.save_locally()
+                self.destroy()
 
-    def save_locally(self, name, email, body):
+    def save_locally(self, data={}):
+        """Append the latest feedback to the end of 
+        the list then save it in a json
+
+        Best way is to read the contents, then append and rewrite
+        """
+        if not data:
+            self.data = self._validate()[0]
+        else:
+            self.data = data
+
+        tkmsg.showinfo(
+            "Feedback will be saved for later",
+            "You are offline now. We've saved "
+            "your feedback and will send it when "
+            "you are online.")
+
         fb_path_ = pathlib.Path(fb_path)
-        obj = {"name": name, "email": email, "body": body}
-        create_fb_tb()
-        
+
+        # Read existing feedbacks
+        try:
+            with open(fb_path_, "r") as r:
+                saved_feedbacks = json.load(r)
+                if not isinstance(saved_feedbacks, list):
+                    saved_feedbacks = []
+        except json.JSONDecodeError:
+            saved_feedbacks = []
+
+        # Append new feedback and save
+        saved_feedbacks.append(self.data)
+        with open(fb_path_, "w") as w:
+            json.dump(saved_feedbacks, w)
+
         logging.info(f"Saved feedback into '{fb_path_.name}'")
         # tkmsg.showinfo("Saved for later", "We have saved your feedback.")
 
@@ -161,40 +217,32 @@ class FeedbackAPI(ctk.CTk):
         import webbrowser as wb
         wb.open_new_tab(LINK)
 
-    def open_gmail(self, name="", email="", body="", all_=""):
-        """`all_` is for when we take from the saved fb file have a long
-        string containing all users feedback"""
-        LINK = "https://mail.google.com/mail/?view=cm&fs=1"
-        import urllib.parse
-        if (name and body) or (name and body and email):
-            title = rf"BMTb User Feedback from {name}"
-            body = f"{body}\n\n\nSend the updates to user's email after addressing issue: "
-            LINK = (
-                LINK+f"&to={self.b_email_addr}"
-                f"&su={urllib.parse.quote(title)}"
-                f"&body={urllib.parse.quote(body)}{email}"
-            )
-            threading.Thread(target=self._web, args=(LINK,)).start()
-        elif (all_):
-            LINK = LINK + f"{all_}{email}"
+    def clear_saved(self):
+        """Clear the feedbacks.json file"""
+        with open(fb_path, "w") as w:
+            json.dump([], w)
 
     def check_periodically(self):
         logging.info("Starting internet check background process")
         while True:
-            # check if the feedbacks are there.
-            # check if internet is there
-            # send
-            if os.path.exists(fb_path) and has_internet():
-                self.open_gmail(all_=self.parse_feedbacks())
-                logging.info("Sending feedbacks...")
-                logging.info("Sent feedbacks - maybe")
-            else:
-                logging.error(
-                    "Either there was no internet,"
-                    " or there's no feedback yet")
+            saved_feedbacks = self.get_saved()
+            # XXX
+            if saved_feedbacks and has_internet():
+                logging.info(
+                    f"Sending {len(saved_feedbacks)} saved feedback(s)...")
+                for fb in saved_feedbacks:
+                    if self.send_feedback(fb):
+                        logging.info("Sent feedback successfully")
+                    else:
+                        logging.error(
+                            "Failed to send feedback; will retry later")
+                self.clear_saved()
 
-            time.sleep(60*2)
+            elif not saved_feedbacks:
+                break
+            time.sleep(60)  # check every 1 minute
 
 
 if __name__ == "__main__":
-    FeedbackAPI().start()
+    # FeedbackAPI().start()
+    pass
