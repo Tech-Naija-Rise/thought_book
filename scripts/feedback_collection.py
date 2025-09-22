@@ -129,7 +129,7 @@ class FeedbackAPI(ctk.CTkToplevel):
             try:
                 with open(log_path, "r") as log_file:
                     lines = log_file.readlines()
-                    return "".join(lines[-100:])  # Return last 100 lines
+                    return "".join(lines[-5:])  # Return last 5 lines
             except Exception as e:
                 logging.error(f"Error reading log file: {e}")
                 return "Could not read log file."
@@ -175,6 +175,11 @@ class FeedbackAPI(ctk.CTkToplevel):
                 # locally store feedback because offline
                 logging.error("No connection, will save feedback locally.")
                 self.save_locally()
+                tkmsg.showinfo(
+            "Feedback will be saved for later",
+            "You are offline now. We've saved "
+            "your feedback and will send it when "
+            "you are online.")
                 self.destroy()
 
     def save_locally(self, data={}):
@@ -187,12 +192,6 @@ class FeedbackAPI(ctk.CTkToplevel):
             self.data = self._validate()[0]
         else:
             self.data = data
-
-        tkmsg.showinfo(
-            "Feedback will be saved for later",
-            "You are offline now. We've saved "
-            "your feedback and will send it when "
-            "you are online.")
 
         fb_path_ = pathlib.Path(fb_path)
 
