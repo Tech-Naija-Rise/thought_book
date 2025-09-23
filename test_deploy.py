@@ -1,3 +1,8 @@
+# test_deploy.py
+# Script to build the executable and create a desktop shortcut on Windows
+
+# It is a script that just is for quick test.
+# now we want to make a proper installer with NSIS in a new deploy.py file
 
 import os
 import shutil
