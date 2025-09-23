@@ -55,6 +55,7 @@ Section "Uninstall"
 SectionEnd
 """
 
+
 def build_exe(script_path="notes_app.py"):
     exe_dir = Path("dist")
     exe_dir.mkdir(exist_ok=True)
@@ -73,15 +74,19 @@ def build_exe(script_path="notes_app.py"):
 
     return exe_dir / f"{app_name}.exe"
 
+
 def write_nsi():
     nsi_path = Path(".") / f"{app_name}.nsi"
     with open(nsi_path, "w", encoding="utf-8") as f:
-        f.write(NSIS_INSTALLER_TEMPLATE.format(app_name=app_name, app_icon=app_icon))
+        f.write(NSIS_INSTALLER_TEMPLATE.format(
+            app_name=app_name, app_icon=app_icon))
     print(f"NSIS script written: {nsi_path}")
     return nsi_path
 
+
 def compile_installer(nsi_path):
     os.system(f'makensis "{nsi_path}"')
+
 
 def main():
     # exe_path = build_exe()
@@ -89,6 +94,19 @@ def main():
     nsi_path = write_nsi()
     compile_installer(nsi_path)
     print("Installer built successfully.")
+
+    # Move the made installer to a special folder where all finished
+    # apps are stored
+    output_dir = Path("C:\\Users\\USER\\Documents\\PROGRAMMING\\FINISHED APPS")
+    output_dir.mkdir(exist_ok=True)
+    installer_path = Path("dist") / "BMTB_Installer.exe"
+    if installer_path.exists():
+        shutil.move(str(installer_path), str(
+            output_dir / "BMTB_Installer.exe"))
+        print(f"Installer moved to: {output_dir / 'BMTB_Installer.exe'}")
+    else:
+        print("Installer not found! Probably already moved or build failed.")
+
 
 if __name__ == "__main__":
     main()
