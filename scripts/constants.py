@@ -8,13 +8,37 @@ __all__ = ["NOTES_DB", "NOTES_FOLDER",
 
 from pathlib import Path
 
+
+
+import sys
+def resource_path(relative_path):
+    """Get the absolute path to resources, works for dev and PyInstaller"""
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = Path(sys._MEIPASS) # type: ignore
+    except AttributeError:
+        base_path = Path(__file__).parent.parent
+
+    return base_path / relative_path
+
+
 main_folder = Path(__file__).resolve().parent.parent
 app_name = "Thought Book"
 app_version = "1.0.0"
 
 imgs_folder = main_folder / "imgs"
 app_icon = imgs_folder / "logo.ico"
+
+app_icon_production = resource_path(app_icon)
+print(app_icon_production)
+
 app_photo = imgs_folder / "logo.png"
+
+
+
+import sys
+from pathlib import Path
+
 
 
 data_folder = os.getenv("appdata")

@@ -86,7 +86,9 @@ class NotesApp(ctk.CTk):
         self.password = None
         self.password_file = pass_file
 
-        # unlock app with password
+        # TODO: when app starts, it opens the main UI
+        # the password setter appears. Makes good UX
+
         self.locked = True
         while self.locked:
             result = self.ask_password()
@@ -94,12 +96,19 @@ class NotesApp(ctk.CTk):
                 self.locked = False
             elif result == "Cancelled":
                 sys.exit()
+            elif result == "exit":
+                sys.exit()
             else:
                 tkmsg.showerror("Error", "Incorrect password. Try again.")
+        
         self.current_note = ""
         self.max_words_b4_training = 1000
         self.focused = ctk.BooleanVar(self, False, "focused")
 
+
+        self.start_ui()
+
+    def start_ui(self):
         if not self.locked:
             self.title(app_name)
             self.geometry("800x500")
@@ -390,6 +399,9 @@ class NotesApp(ctk.CTk):
                 "Password", "Enter password (or leave blank to reset):", show="*")
             if entered is None:
                 return "Cancelled"
+            
+            elif entered == "exit":
+                return "exit"
 
             if entered == "":
                 return self.forgot_password()

@@ -2,7 +2,8 @@
 import os
 import shutil
 from pathlib import Path
-from scripts.constants import app_name, app_icon
+import sys
+from scripts.constants import app_name, app_icon, app_version, app_icon_production
 
 # The installer must have the following:
 # 1. assign a shortcut in desktop with a hotkey of ctrl+alt+t
@@ -12,12 +13,14 @@ from scripts.constants import app_name, app_icon
 # 4. add windows registry for windows to recognize and accordingly
 # remove the app from windows settings
 
+finished_app_installer = "BMTB_Installer_" + app_version + ".exe"
 
 NSIS_INSTALLER_TEMPLATE = r"""
 !include "MUI2.nsh"
+!include nsDialogs.nsh
 
 Name "{app_name}"
-OutFile "dist\BMTB_Installer.exe"
+OutFile "dist\{finished_app_installer}"
 InstallDir "$PROGRAMFILES\BM\BMTB"
 RequestExecutionLevel admin
 
@@ -33,13 +36,49 @@ RequestExecutionLevel admin
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
-!insertmacro MUI_PAGE_FINISH
+
 
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_UNPAGE_FINISH
 
 !insertmacro MUI_LANGUAGE "English"
+
+
+
+Var LaunchCheckbox
+
+Page custom LaunchPage Finish
+
+Function LaunchPage
+    nsDialogs::Create 1018
+    Pop $0
+    ${{If}} $0 == error
+        Abort
+    ${{EndIf}}
+
+    ; Create the checkbox
+    ${{NSD_CreateCheckBox}} 20u 20u 200u 12u "Launch {app_name}"
+    Pop $LaunchCheckbox
+    ${{NSD_SetState}} $LaunchCheckbox 1 ; checked by default
+
+    nsDialogs::Show
+FunctionEnd
+
+Function Finish
+    ; Check if checkbox is checked and launch app
+    ${{NSD_GetState}} $LaunchCheckbox $0
+    StrCmp $0 1 LaunchApp Done
+    Done:
+    Return
+
+    LaunchApp:
+    Exec "$INSTDIR\{app_name}.exe"
+FunctionEnd
+
+
+
+
 
 ;--------------------------------
 Section "Install"
@@ -48,28 +87,27 @@ Section "Install"
 
     ; Start Menu shortcut
     CreateDirectory "$SMPROGRAMS\{app_name}"
-    CreateShortCut "$SMPROGRAMS\{app_name}\{app_name}.lnk" "$INSTDIR\{app_name}.exe" "" "$INSTDIR\{app_name}.exe" 0 SW_SHOWNORMAL "" "3+T"
+    CreateShortCut "$SMPROGRAMS\{app_name}\{app_name}.lnk"\
+    "$INSTDIR\{app_name}.exe" "" "$INSTDIR\{app_name}.exe" 0 SW_SHOWNORMAL "" "3+T"
 
     ; Desktop shortcut
-    CreateShortCut "$DESKTOP\{app_name}.lnk" "$INSTDIR\{app_name}.exe" "" "$INSTDIR\{app_name}.exe" 0 SW_SHOWNORMAL "" "3+T"
+    CreateShortCut "$DESKTOP\{app_name}.lnk"\
+    "$INSTDIR\{app_name}.exe" "" "$INSTDIR\{app_name}.exe" 0 SW_SHOWNORMAL "" "3+T"
 
     ; Write uninstaller
-    WriteUninstaller "$INSTDIR\Uninstall.exe"
+    WriteUninstaller "$INSTDIR\Uninstall_BMTB.exe"
 
-    ; Add to PATH
-    ReadEnvStr $0 "Path"
-    StrCmp $0 "" 0 +3
-        StrCpy $0 "$INSTDIR"
-        Goto +2
-    StrCpy $0 "$0;$INSTDIR"
-    WriteEnvStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$0"
-    SendMessage ${HWND_BROADCAST} ${WM_SETTINGCHANGE} 0 "STR:Environment"
-
+    ; ----------------------------
+    
+    
     ; Add registry for Add/Remove Programs
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{app_name}" "DisplayName" "{app_name}"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{app_name}" "UninstallString" "$INSTDIR\Uninstall.exe"
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{app_name}" "UninstallString" "$INSTDIR\Uninstall_BMTB.exe"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{app_name}" "InstallLocation" "$INSTDIR"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{app_name}" "Publisher" "BM Apps"
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{app_name}" "Publisher" "TNR Software"
+
+    ; make a "Launch {app_name}" checkbutton in the final installer page
+
 
 SectionEnd
 
@@ -79,16 +117,13 @@ Section "Uninstall"
     RMDir "$SMPROGRAMS\{app_name}"
     Delete "$DESKTOP\{app_name}.lnk"
 
-    ; Remove from PATH
-    ReadEnvStr $0 "Path"
-    StrReplace $0 "$0" ";$INSTDIR" "" ; remove our path entry
-    WriteEnvStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$0"
-    SendMessage ${HWND_BROADCAST} ${WM_SETTINGCHANGE} 0 "STR:Environment"
-
+    ; ----------------------------
+    
     ; Remove registry entry
     DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{app_name}"
 
-    RMDir "$INSTDIR"
+    Delete "$INSTDIR\*.*"  ; delete all files
+    RMDir "$INSTDIR"       ; remove directory
 SectionEnd
 
 """
@@ -97,13 +132,17 @@ SectionEnd
 def build_exe(script_path="notes_app.py"):
     exe_dir = Path("dist")
     exe_dir.mkdir(exist_ok=True)
+    # when building, make sure that we have the extra data which is the icon
+    # and any other files that the app might need
 
-    cmd = f'pyinstaller --noconfirm -i "{app_icon}" -n "{app_name}" --noconsole --onefile "{script_path}"'
+    cmd = f'pyinstaller --noconfirm -i "{app_icon}"'
+    cmd += f' --add-data "{app_icon};imgs" -n "{app_name}"'
+    cmd += f' --noconsole --onefile "{script_path}"'
     print(cmd)
     os.system(cmd)
 
     # cleanup
-    for item in ["build", "__pycache__", f"{app_name}.spec"]:
+    for item in ["build", "__pycache__"]:
         p = Path(item)
         if p.is_dir():
             shutil.rmtree(p, ignore_errors=True)
@@ -117,7 +156,10 @@ def write_nsi():
     nsi_path = Path(".") / f"{app_name}.nsi"
     with open(nsi_path, "w", encoding="utf-8") as f:
         f.write(NSIS_INSTALLER_TEMPLATE.format(
-            app_name=app_name, app_icon=app_icon))
+            app_name=app_name,
+            app_icon=app_icon,
+            finished_app_installer=finished_app_installer,
+        ))
     print(f"NSIS script written: {nsi_path}")
     return nsi_path
 
@@ -127,8 +169,8 @@ def compile_installer(nsi_path):
 
 
 def main():
-    exe_path = build_exe()
-    print(f"Built exe: {exe_path}")
+    # exe_path = build_exe()
+    # print(f"Built exe: {exe_path}")
     nsi_path = write_nsi()
     compile_installer(nsi_path)
     print("Installer built successfully.")
@@ -137,11 +179,11 @@ def main():
     # apps are stored
     output_dir = Path("C:\\Users\\USER\\Documents\\PROGRAMMING\\FINISHED APPS")
     output_dir.mkdir(exist_ok=True)
-    installer_path = Path("dist") / "BMTB_Installer.exe"
+    installer_path = Path("dist") / finished_app_installer
     if installer_path.exists():
         shutil.move(str(installer_path), str(
-            output_dir / "BMTB_Installer.exe"))
-        print(f"Installer moved to: {output_dir / 'BMTB_Installer.exe'}")
+            output_dir / finished_app_installer))
+        print(f"Installer moved to: {output_dir / finished_app_installer}")
     else:
         print("Installer not found! Probably already moved or build failed.")
 
