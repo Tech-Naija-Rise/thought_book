@@ -334,11 +334,13 @@ def askstring(title="Input", prompt="Enter value:", show=None):
         dialog.destroy()
 
     def on_cancel():
+        result["value"] = "exit" # type: ignore
         dialog.destroy()
 
     # Shortcuts
     dialog.bind("<Escape>", lambda e: on_cancel())
     dialog.bind("<Return>", lambda e: on_ok())
+    dialog.wm_protocol("WM_DELETE_WINDOW", on_cancel)
 
     # Buttons
     btn_frame = ctk.CTkFrame(dialog, fg_color="transparent")

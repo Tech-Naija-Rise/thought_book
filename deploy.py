@@ -4,6 +4,15 @@ import shutil
 from pathlib import Path
 from scripts.constants import app_name, app_icon
 
+# The installer must have the following:
+# 1. assign a shortcut in desktop with a hotkey of ctrl+alt+t
+# 2. assign a shortcut in start menu with a hotkey of ctrl+alt+t
+
+# 3. make the abbreviation BMTB to be in Path environment variable
+# 4. add windows registry for windows to recognize and accordingly 
+# remove the app from windows settings
+
+
 NSIS_INSTALLER_TEMPLATE = r"""
 !include "MUI2.nsh"
 
@@ -39,11 +48,29 @@ Section "Install"
 
     ; Start Menu shortcut
     CreateDirectory "$SMPROGRAMS\{app_name}"
-    CreateShortCut "$SMPROGRAMS\{app_name}\{app_name}.lnk" "$INSTDIR\{app_name}.exe" "" "$INSTDIR\{app_name}.exe" 0 SW_SHOWNORMAL "" "CTRL+ALT+T"
+    CreateShortCut "$SMPROGRAMS\{app_name}\{app_name}.lnk" "$INSTDIR\{app_name}.exe" "" "$INSTDIR\{app_name}.exe" 0 SW_SHOWNORMAL "" "3+T"
 
     ; Desktop shortcut
-    CreateShortCut "$DESKTOP\{app_name}.lnk" "$INSTDIR\{app_name}.exe" "" "$INSTDIR\{app_name}.exe" 0 SW_SHOWNORMAL "" "CTRL+ALT+T"
+    CreateShortCut "$DESKTOP\{app_name}.lnk" "$INSTDIR\{app_name}.exe" "" "$INSTDIR\{app_name}.exe" 0 SW_SHOWNORMAL "" "3+T"
+
+    ; Write uninstaller
     WriteUninstaller "$INSTDIR\Uninstall.exe"
+
+    ; Add to PATH
+    ReadEnvStr $0 "Path"
+    StrCmp $0 "" 0 +3
+        StrCpy $0 "$INSTDIR"
+        Goto +2
+    StrCpy $0 "$0;$INSTDIR"
+    WriteEnvStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$0"
+    SendMessage ${HWND_BROADCAST} ${WM_SETTINGCHANGE} 0 "STR:Environment"
+
+    ; Add registry for Add/Remove Programs
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{app_name}" "DisplayName" "{app_name}"
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{app_name}" "UninstallString" "$INSTDIR\Uninstall.exe"
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{app_name}" "InstallLocation" "$INSTDIR"
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{app_name}" "Publisher" "BM Apps"
+
 SectionEnd
 
 Section "Uninstall"
@@ -51,8 +78,19 @@ Section "Uninstall"
     Delete "$SMPROGRAMS\{app_name}\{app_name}.lnk"
     RMDir "$SMPROGRAMS\{app_name}"
     Delete "$DESKTOP\{app_name}.lnk"
+
+    ; Remove from PATH
+    ReadEnvStr $0 "Path"
+    StrReplace $0 "$0" ";$INSTDIR" "" ; remove our path entry
+    WriteEnvStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$0"
+    SendMessage ${HWND_BROADCAST} ${WM_SETTINGCHANGE} 0 "STR:Environment"
+
+    ; Remove registry entry
+    DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{app_name}"
+
     RMDir "$INSTDIR"
 SectionEnd
+
 """
 
 
@@ -89,8 +127,8 @@ def compile_installer(nsi_path):
 
 
 def main():
-    # exe_path = build_exe()
-    # print(f"Built exe: {exe_path}")
+    exe_path = build_exe()
+    print(f"Built exe: {exe_path}")
     nsi_path = write_nsi()
     compile_installer(nsi_path)
     print("Installer built successfully.")

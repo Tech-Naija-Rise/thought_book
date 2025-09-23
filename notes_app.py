@@ -357,9 +357,17 @@ class NotesApp(ctk.CTk):
 
     def forgot_password(self):
         code = askstring(
-            "Recovery", "Enter recovery code:", show="*")
+            "Recovery", "Enter recovery "
+            "code\n\nWrite this recovery code "
+            "down in a safe place.\n Losing it "
+            "means you cannot reset your "
+            "password.", show="*")
+
         if code is None:
             return False
+        
+        elif code == "exit":
+            exit()
 
         if verify_recovery_key(code):
             new_pass = askstring(

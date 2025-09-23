@@ -18,7 +18,11 @@ app_photo = imgs_folder / "logo.png"
 
 
 data_folder = os.getenv("appdata")
-NOTES_FOLDER = os.path.join(data_folder, "Thought Book")  # type: ignore
+
+BM_FOLDER = os.path.join(data_folder, "BM") # type: ignore
+os.makedirs(BM_FOLDER, exist_ok=True)
+
+NOTES_FOLDER = os.path.join(BM_FOLDER, "Thought Book")  # type: ignore
 os.makedirs(NOTES_FOLDER, exist_ok=True)
 
 
