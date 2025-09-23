@@ -4,17 +4,37 @@ import shutil
 from pathlib import Path
 from scripts.constants import app_name
 
-NSIS_TEMPLATE = r"""
+NSIS_INSTALLER_TEMPLATE = r"""
 !include "MUI2.nsh"
 
 Name "{app_name}"
 OutFile "dist\{app_name}_Installer.exe"
-InstallDir "$PROGRAMFILES\{app_name}"
+InstallDir "$PROGRAMFILES\BM\{app_name}"
 RequestExecutionLevel user
 
-Page directory
-Page instfiles
+;--------------------------------
+; Modern UI Settings
+!define MUI_ABORTWARNING
+!define MUI_ICON "app.ico"
+!define MUI_UNICON "app.ico"
+!define MUI_HEADERIMAGE
+!define MUI_HEADERIMAGE_BITMAP "header.bmp"     ; 150x57 bmp
+!define MUI_WELCOMEFINISHPAGE_BITMAP "wizard.bmp" ; 164x314 bmp
 
+;--------------------------------
+; Pages
+!insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_PAGE_FINISH
+
+!insertmacro MUI_UNPAGE_CONFIRM
+!insertmacro MUI_UNPAGE_INSTFILES
+!insertmacro MUI_UNPAGE_FINISH
+
+!insertmacro MUI_LANGUAGE "English"
+
+;--------------------------------
 Section "Install"
     SetOutPath "$INSTDIR"
     File "dist\{app_name}.exe"
@@ -23,7 +43,7 @@ Section "Install"
     CreateDirectory "$SMPROGRAMS\{app_name}"
     CreateShortCut "$SMPROGRAMS\{app_name}\{app_name}.lnk" "$INSTDIR\{app_name}.exe" "" "$INSTDIR\{app_name}.exe" 0 SW_SHOWNORMAL "" "CTRL+ALT+T"
 
-    ; Desktop shortcut with hotkey
+    ; Desktop shortcut
     CreateShortCut "$DESKTOP\{app_name}.lnk" "$INSTDIR\{app_name}.exe" "" "$INSTDIR\{app_name}.exe" 0 SW_SHOWNORMAL "" "CTRL+ALT+T"
 SectionEnd
 
@@ -55,9 +75,9 @@ def build_exe(script_path="notes_app.py"):
     return exe_dir / f"{app_name}.exe"
 
 def write_nsi():
-    nsi_path = Path("dist") / f"{app_name}.nsi"
+    nsi_path = Path(".") / f"{app_name}.nsi"
     with open(nsi_path, "w", encoding="utf-8") as f:
-        f.write(NSIS_TEMPLATE.format(app_name=app_name))
+        f.write(NSIS_INSTALLER_TEMPLATE.format(app_name=app_name))
     print(f"NSIS script written: {nsi_path}")
     return nsi_path
 
@@ -65,8 +85,8 @@ def compile_installer(nsi_path):
     os.system(f'makensis "{nsi_path}"')
 
 def main():
-    exe_path = build_exe()
-    print(f"Built exe: {exe_path}")
+    # exe_path = build_exe()
+    # print(f"Built exe: {exe_path}")
     nsi_path = write_nsi()
     compile_installer(nsi_path)
     print("Installer built successfully.")
