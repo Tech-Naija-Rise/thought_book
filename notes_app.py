@@ -32,6 +32,7 @@ import sys
 import logging
 import datetime
 from tkinter import messagebox as tkmsg
+import tkinter
 from tkinter.messagebox import askyesno
 
 
@@ -41,6 +42,9 @@ import customtkinter as ctk
 from scripts.constants import (
     logs_file,
     pass_file,
+    app_name,
+    app_photo,
+    app_icon,
 )
 from scripts.bma_express import ActivitiesAPI
 from scripts.utils import (
@@ -97,8 +101,9 @@ class NotesApp(ctk.CTk):
         self.focused = ctk.BooleanVar(self, False, "focused")
 
         if not self.locked:
-            self.title("Thought Book")
+            self.title(app_name)
             self.geometry("800x500")
+            self.wm_iconbitmap(app_icon)
 
             self.notes_file = NOTES_DB
             # After loading notes
@@ -479,6 +484,7 @@ class NotesApp(ctk.CTk):
 def main():
     ctk.set_appearance_mode("dark")
     app = NotesApp()
+    app.iconbitmap(app_icon)
     app.mainloop()
 
 

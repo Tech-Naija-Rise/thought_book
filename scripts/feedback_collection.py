@@ -20,7 +20,7 @@ import time
 import customtkinter as ctk
 import requests
 
-from .constants import logging, fb_path, logs_file, tkmsg, app_name, BMTb_FEEDBACK_SERVER
+from .constants import logging, fb_path, logs_file, tkmsg, app_name, BMTb_FEEDBACK_SERVER, app_icon
 from .utils import has_internet
 
 
@@ -38,6 +38,7 @@ class FeedbackAPI(ctk.CTkToplevel):
         self.transient(self.parent)
         self.title(f"BM - Give feedback")
         self.geometry("500x400")
+        self.iconbitmap(app_icon)
         self.wm_protocol("WM_DELETE_WINDOW", self.on_close)
 
         self.help = ctk.CTkLabel(
@@ -242,7 +243,7 @@ class FeedbackAPI(ctk.CTkToplevel):
                     "your feedback and will send it when "
                     "you are online.")
                 self.on_close()
-        
+
     def on_close(self):
         """what to do before closing"""
         self.after(500, self.destroy)

@@ -2,7 +2,9 @@ import tkinter.messagebox as tkmsg
 import customtkinter as ctk
 import os
 from scripts.constants import (
-    pass_file
+    pass_file,
+    app_icon,
+
 )
 from scripts.utils import (
     askstring, clear_all_notes)
@@ -16,6 +18,7 @@ class SettingsWindow(ctk.CTkToplevel):
         super().__init__(parent)
         self.title("Settings")
         self.geometry("300x350")
+        self.wm_iconbitmap(app_icon)
         # add a scrollable
         self.resizable(False, True)
         self.transient(parent)   # Tie dialog to parent (only on top of it)
@@ -56,8 +59,20 @@ class SettingsWindow(ctk.CTkToplevel):
     def confirm_clear_all(self):
         dialog = ctk.CTkInputDialog(
             text="Type 'YES' to delete ALL notes permanently:",
-            title="Confirm Clear All"
+            title="Confirm Clear All",
+
         )
+
+        # Set icon for the dialog window
+        try:
+            dialog.winfo_toplevel().iconbitmap(app_icon)
+            # or, if you prefer using wm_iconphoto:
+            # from PIL import Image, ImageTk
+            # icon_image = ImageTk.PhotoImage(file=r"C:\path\to\logo.png")
+            # dialog._top.wm_iconphoto(True, icon_image)
+        except Exception as e:
+            print("Failed to set icon:", e)
+
         answer = dialog.get_input()
         if answer and answer.strip().upper() == "YES":
             clear_all_notes()

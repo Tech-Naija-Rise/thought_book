@@ -6,7 +6,16 @@ __all__ = ["NOTES_DB", "NOTES_FOLDER",
            "RECOVERY_FILE", "pass_file",
            "data_folder", "logs_file", "BMA_DOWNLOAD_LINK"]
 
+from pathlib import Path
+
+main_folder = Path(__file__).resolve().parent.parent
 app_name = "Thought Book"
+app_version = "1.0.0"
+
+imgs_folder = main_folder / "imgs"
+app_icon = imgs_folder / "logo.ico"
+app_photo = imgs_folder / "logo.png"
+
 
 data_folder = os.getenv("appdata")
 NOTES_FOLDER = os.path.join(data_folder, "Thought Book")  # type: ignore
@@ -29,6 +38,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
+logging.info(f"Main folder: {main_folder}")
 
 
 # They need to see the app too in demo.

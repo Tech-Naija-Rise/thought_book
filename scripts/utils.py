@@ -25,7 +25,7 @@ import customtkinter as ctk
 import os
 import sqlite3
 import json
-from .constants import *
+from .constants import NOTES_DB, RECOVERY_FILE, logs_file, app_icon
 from typing import List, Dict, Optional
 import winreg
 
@@ -308,11 +308,12 @@ def askstring(title="Input", prompt="Enter value:", show=None):
     # Root hidden window
     root = ctk.CTk()
     root.withdraw()
+    root.iconbitmap(app_icon)
     # Create dialog
     dialog = ctk.CTkToplevel(root)
     dialog.title(title)
-    dialog.geometry("300x150")
-    # dialog.lift()   # bring above all windows
+    dialog.winfo_toplevel().geometry("300x150")
+    dialog.wm_iconbitmap(app_icon)
     dialog.transient(root)   # Tie dialog to root (only on top of it)
     dialog.grab_set()        # Keep it modal (block other app windows)
 

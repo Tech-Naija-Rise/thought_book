@@ -2,24 +2,22 @@
 import os
 import shutil
 from pathlib import Path
-from scripts.constants import app_name
+from scripts.constants import app_name, app_icon
 
 NSIS_INSTALLER_TEMPLATE = r"""
 !include "MUI2.nsh"
 
 Name "{app_name}"
-OutFile "dist\{app_name}_Installer.exe"
-InstallDir "$PROGRAMFILES\BM\{app_name}"
-RequestExecutionLevel user
+OutFile "dist\BMTB_Installer.exe"
+InstallDir "$PROGRAMFILES\BM\BMTB"
+RequestExecutionLevel admin
 
 ;--------------------------------
 ; Modern UI Settings
 !define MUI_ABORTWARNING
-!define MUI_ICON "app.ico"
-!define MUI_UNICON "app.ico"
+!define MUI_ICON {app_icon}
+!define MUI_UNICON {app_icon}
 !define MUI_HEADERIMAGE
-!define MUI_HEADERIMAGE_BITMAP "header.bmp"     ; 150x57 bmp
-!define MUI_WELCOMEFINISHPAGE_BITMAP "wizard.bmp" ; 164x314 bmp
 
 ;--------------------------------
 ; Pages
@@ -45,6 +43,7 @@ Section "Install"
 
     ; Desktop shortcut
     CreateShortCut "$DESKTOP\{app_name}.lnk" "$INSTDIR\{app_name}.exe" "" "$INSTDIR\{app_name}.exe" 0 SW_SHOWNORMAL "" "CTRL+ALT+T"
+    WriteUninstaller "$INSTDIR\Uninstall.exe"
 SectionEnd
 
 Section "Uninstall"
@@ -77,7 +76,7 @@ def build_exe(script_path="notes_app.py"):
 def write_nsi():
     nsi_path = Path(".") / f"{app_name}.nsi"
     with open(nsi_path, "w", encoding="utf-8") as f:
-        f.write(NSIS_INSTALLER_TEMPLATE.format(app_name=app_name))
+        f.write(NSIS_INSTALLER_TEMPLATE.format(app_name=app_name, app_icon=app_icon))
     print(f"NSIS script written: {nsi_path}")
     return nsi_path
 
