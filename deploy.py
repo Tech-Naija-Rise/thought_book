@@ -9,7 +9,7 @@ from scripts.constants import app_name, app_icon
 # 2. assign a shortcut in start menu with a hotkey of ctrl+alt+t
 
 # 3. make the abbreviation BMTB to be in Path environment variable
-# 4. add windows registry for windows to recognize and accordingly 
+# 4. add windows registry for windows to recognize and accordingly
 # remove the app from windows settings
 
 
@@ -98,7 +98,7 @@ def build_exe(script_path="notes_app.py"):
     exe_dir = Path("dist")
     exe_dir.mkdir(exist_ok=True)
 
-    cmd = f'pyinstaller --noconfirm -n "{app_name}" --noconsole --onefile "{script_path}"'
+    cmd = f'pyinstaller --noconfirm -i "{app_icon}" -n "{app_name}" --noconsole --onefile "{script_path}"'
     print(cmd)
     os.system(cmd)
 
