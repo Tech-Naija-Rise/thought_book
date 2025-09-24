@@ -169,8 +169,8 @@ def compile_installer(nsi_path):
 
 
 def main():
-    # exe_path = build_exe()
-    # print(f"Built exe: {exe_path}")
+    exe_path = build_exe()
+    print(f"Built exe: {exe_path}")
     nsi_path = write_nsi()
     compile_installer(nsi_path)
     print("Installer built successfully.")
