@@ -145,7 +145,7 @@ class FeedbackAPI(ctk.CTkToplevel):
     def connected_to_server(self, url=BMTb_FEEDBACK_SERVER):
         try:
             logging.info(f"Attempting to connect to server at '{url}'")
-            response = requests.get(url, timeout=3)
+            response = requests.get(url, timeout=60)
 
             if response.status_code == 200:
                 logging.info("Connected to server successfully!")
@@ -176,20 +176,24 @@ class FeedbackAPI(ctk.CTkToplevel):
 
         # First test for the connection to the server
         if self.connected_to_server():
-            r = requests.post(
-                url, json=self.data, timeout=3)
+            try:
+                r = requests.post(
+                    url, json=self.data, timeout=10)
 
-            if ((r.status_code == 200)):
-                logging.info("Feedback sent to server!")
-                return True
-            elif r.status_code == 503:
-                logging.error("Server is down temporarily")
-                return None
-            else:
-                logging.error(
-                    "Feedback not sent or server "
-                    "returned error check "
-                    "logs of server")
+                if ((r.status_code == 200)):
+                    logging.info("Feedback sent to server!")
+                    return True
+                elif r.status_code == 503:
+                    logging.error("Server is down temporarily")
+                    return None
+                else:
+                    logging.error(
+                        "Feedback not sent or server "
+                        "returned error check "
+                        "logs of server")
+                    return False
+            except Exception as e:
+                logging.error(f"Error sending feedback: {e}")
                 return False
 
     def save_or_send(self):
@@ -205,7 +209,7 @@ class FeedbackAPI(ctk.CTkToplevel):
         if self._validate()[1]:  # type: ignore
             self.helper.configure(
                 text="Processing... Please don't close this window")
-            if has_internet():
+            if has_internet() or self.connected_to_server():
                 # if i have internet, then do this through gmail directly.
                 s = self.send_feedback()
                 if s:
@@ -243,6 +247,8 @@ class FeedbackAPI(ctk.CTkToplevel):
                     "your feedback and will send it when "
                     "you are online.")
                 self.on_close()
+            
+            self.on_close()
 
     def on_close(self):
         """what to do before closing"""
