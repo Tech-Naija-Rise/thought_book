@@ -32,7 +32,6 @@ import sys
 import logging
 import datetime
 from tkinter import messagebox as tkmsg
-import tkinter
 from tkinter.messagebox import askyesno
 
 
@@ -40,11 +39,10 @@ import customtkinter as ctk
 
 
 from scripts.constants import (
-    logs_file,
-    pass_file,
-    app_name,
-    app_photo,
-    app_icon,
+    LOGS_FILE,
+    PASS_FILE,
+    APP_NAME,
+    APP_ICON,
 )
 from scripts.bma_express import ActivitiesAPI
 from scripts.utils import (
@@ -59,12 +57,7 @@ from scripts.utils import (
 from scripts.settings import SettingsWindow
 
 # setup logging once (top-level of your file, before class)
-logging.basicConfig(
-    filename=logs_file,
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
 
-)
 
 
 class NotesApp(ctk.CTk):
@@ -84,7 +77,7 @@ class NotesApp(ctk.CTk):
 
         # unlock app with password
         self.password = None
-        self.password_file = pass_file
+        self.password_file = PASS_FILE
 
         # TODO: when app starts, it opens the main UI
         # the password setter appears. Makes good UX
@@ -110,9 +103,9 @@ class NotesApp(ctk.CTk):
 
     def start_ui(self):
         if not self.locked:
-            self.title(app_name)
+            self.title(APP_NAME)
             self.geometry("800x500")
-            self.wm_iconbitmap(app_icon)
+            self.wm_iconbitmap(APP_ICON)
 
             self.notes_file = NOTES_DB
             # After loading notes
@@ -257,7 +250,6 @@ class NotesApp(ctk.CTk):
             self.bma.make_activities(self.get_poas(self.current_note))
         except Exception as e:
             logging.error(f"While closing, something's happening: {e}")
-
         finally:
             logging.info(
                 f"Currently threads running are: {threading.active_count()}")
@@ -504,7 +496,7 @@ class NotesApp(ctk.CTk):
 def main():
     ctk.set_appearance_mode("dark")
     app = NotesApp()
-    app.iconbitmap(app_icon)
+    app.iconbitmap(APP_ICON)
     app.mainloop()
 
 

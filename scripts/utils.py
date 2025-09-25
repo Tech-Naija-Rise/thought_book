@@ -25,7 +25,7 @@ import customtkinter as ctk
 import os
 import sqlite3
 import json
-from .constants import NOTES_DB, RECOVERY_FILE, logs_file, app_icon
+from .constants import NOTES_DB, RECOVERY_FILE, LOGS_FILE, APP_ICON
 from typing import List, Dict, Optional
 import winreg
 
@@ -33,7 +33,7 @@ import winreg
 import logging
 # setup logging once (top-level of your file, before class)
 logging.basicConfig(
-    filename=logs_file,
+    filename=LOGS_FILE,
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
 
@@ -50,14 +50,16 @@ def set_user_env_var(name, value):
     )
     winreg.SetValueEx(reg_key, name, 0, winreg.REG_SZ, value)
     winreg.CloseKey(reg_key)
-    logging.info(f"[+] User variable {name} set to {value}")
+    logging.info(f"[+] User variable '{name}' set to '{value}'")
 
 
-# Example usage
-if not os.getenv("BMTb"):
-    set_user_env_var("BMTb", os.path.abspath("."))
-else:
-    logging.warning("BMTb env variable already set.")
+# # This will be the directory of every
+# # BM app including BMTB. So it would be easier for each app to communicate with
+# # the other
+# if not os.getenv("BM"):
+#     set_user_env_var("BM", os.path.abspath("."))
+# else:
+#     logging.warning("BM env variable already set.")
 
 
 def get_connection() -> sqlite3.Connection:
@@ -308,12 +310,12 @@ def askstring(title="Input", prompt="Enter value:", show=None):
     # Root hidden window
     root = ctk.CTk()
     root.withdraw()
-    root.iconbitmap(app_icon)
+    root.iconbitmap(APP_ICON)
     # Create dialog
     dialog = ctk.CTkToplevel(root)
     dialog.title(title)
     dialog.winfo_toplevel().geometry("300x150")
-    dialog.wm_iconbitmap(app_icon)
+    dialog.wm_iconbitmap(APP_ICON)
     dialog.transient(root)   # Tie dialog to root (only on top of it)
     dialog.grab_set()        # Keep it modal (block other app windows)
 
@@ -334,7 +336,7 @@ def askstring(title="Input", prompt="Enter value:", show=None):
         dialog.destroy()
 
     def on_cancel():
-        result["value"] = "exit" # type: ignore
+        result["value"] = "exit"  # type: ignore
         dialog.destroy()
 
     # Shortcuts

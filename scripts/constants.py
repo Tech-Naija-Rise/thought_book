@@ -1,79 +1,72 @@
+# constants.py
 import os
+import json
 import logging
+from pathlib import Path
+import sys
 import tkinter.messagebox as tkmsg
 
-__all__ = ["NOTES_DB", "NOTES_FOLDER",
-           "RECOVERY_FILE", "pass_file",
-           "data_folder", "logs_file", "BMA_DOWNLOAD_LINK"]
+__all__ = [
+    "NOTES_DB", "NOTES_FOLDER",
+    "RECOVERY_FILE", "PASS_FILE",
+    "DATA_FOLDER", "LOGS_FILE",
+    "BMA_DOWNLOAD_LINK", "APP_NAME",
+    "APP_VERSION", "APP_ICON", "APP_PHOTO"
+]
 
-from pathlib import Path
+# --- App Info ---
+APP_NAME = "Thought Book"
+APP_VERSION = "1.0.0"
 
-
-
-import sys
-def resource_path(relative_path):
-    """Get the absolute path to resources, works for dev and PyInstaller"""
+# --- Resource Path Helper ---
+def resource_path(relative_path: Path) -> Path:
+    """Return absolute path to resource (works for dev & PyInstaller)."""
     try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = Path(sys._MEIPASS) # type: ignore
+        base_path = Path(sys._MEIPASS)  # type: ignore # PyInstaller temp folder
     except AttributeError:
-        base_path = Path(__file__).parent.parent
-
+        base_path = Path(__file__).resolve().parent.parent
     return base_path / relative_path
 
+# --- Main Folders ---
+MAIN_FOLDER = Path(__file__).resolve().parent.parent
+DEPLOY_INFO_PATH = MAIN_FOLDER / "deploy.info"
 
-main_folder = Path(__file__).resolve().parent.parent
-app_name = "Thought Book"
-app_version = "1.0.0"
+# --- Load version if in deploy.info ---
+if DEPLOY_INFO_PATH.exists():
+    with open(DEPLOY_INFO_PATH, "r", encoding="utf-8") as f:
+        deploy_info = json.load(f)
+    APP_VERSION = deploy_info.get("app_version", APP_VERSION)
 
-imgs_folder = main_folder / "imgs"
-app_icon = imgs_folder / "logo.ico"
+# --- Images & Icons ---
+IMGS_FOLDER = MAIN_FOLDER / "imgs"
+APP_ICON = resource_path(IMGS_FOLDER / "logo.ico")
+APP_PHOTO = IMGS_FOLDER / "logo.png"
 
-app_icon_production = resource_path(app_icon)
-print(app_icon_production)
+# --- Data Storage (always under %APPDATA%/BM) ---
+DATA_FOLDER = Path(os.getenv("APPDATA", "")) / "BM"
+NOTES_FOLDER = DATA_FOLDER / APP_NAME
+NOTES_FOLDER.mkdir(parents=True, exist_ok=True)
 
-app_photo = imgs_folder / "logo.png"
+# --- Files ---
+NOTES_DB = NOTES_FOLDER / "BMTbnotes.db"
+RECOVERY_FILE = NOTES_FOLDER / "recovery.key"
+PASS_FILE = NOTES_FOLDER / "pass.pass"
+LOGS_FILE = NOTES_FOLDER / "app.log"
+FB_PATH = NOTES_FOLDER / "feedbacks.json"
 
-
-
-import sys
-from pathlib import Path
-
-
-
-data_folder = os.getenv("appdata")
-
-BM_FOLDER = os.path.join(data_folder, "BM") # type: ignore
-os.makedirs(BM_FOLDER, exist_ok=True)
-
-NOTES_FOLDER = os.path.join(BM_FOLDER, "Thought Book")  # type: ignore
-os.makedirs(NOTES_FOLDER, exist_ok=True)
-
-
-# Production
-NOTES_DB = os.path.join(NOTES_FOLDER, "BMTbnotes.db")
-
-
-# putting all files here including
-# the hashed passwords
-RECOVERY_FILE = os.path.join(NOTES_FOLDER, "recovery.key")  # type: ignore
-pass_file = os.path.join(NOTES_FOLDER, "pass.pass")  # type: ignore
-logs_file = os.path.join(NOTES_FOLDER, "app.log")  # type: ignore
-fb_path = os.path.join(NOTES_FOLDER, "feedbacks.json")
-
+# --- Logging ---
 logging.basicConfig(
-    filename=logs_file,
+    filename=LOGS_FILE,
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
-logging.info(f"Main folder: {main_folder}")
 
-
-# They need to see the app too in demo.
-
-# XXX this link will change once i setup the app's git site.
+# --- External Links ---
 BMA_DOWNLOAD_LINK = "https://github.com/Mahmudumar/BMA/releases/latest"
+BMTB_DOWNLOAD_LINK = "https://github.com/Mahmudumar/thought_book/releases"
+BMTB_FEEDBACK_SERVER = "https://feedback-server-tnr.onrender.com/feedback"
 
-
-BMTb_DOWNLOAD_LINK = "https://github.com/Mahmudumar/thought_book/releases"
-BMTb_FEEDBACK_SERVER = "https://feedback-server-tnr.onrender.com/feedback"
+if __name__ == "__main__":
+    print(f"Main folder: {MAIN_FOLDER}")
+    print(f"Data folder: {DATA_FOLDER}")
+    print(f"App version: {APP_VERSION}")

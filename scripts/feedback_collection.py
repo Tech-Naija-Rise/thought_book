@@ -20,7 +20,11 @@ import time
 import customtkinter as ctk
 import requests
 
-from .constants import logging, fb_path, logs_file, tkmsg, app_name, BMTb_FEEDBACK_SERVER, app_icon
+from .constants import (logging,
+                        FB_PATH, LOGS_FILE,
+                        tkmsg, APP_NAME,
+                        BMTB_FEEDBACK_SERVER,
+                        APP_ICON)
 from .utils import has_internet
 
 
@@ -38,7 +42,7 @@ class FeedbackAPI(ctk.CTkToplevel):
         self.transient(self.parent)
         self.title(f"BM - Give feedback")
         self.geometry("500x400")
-        self.iconbitmap(app_icon)
+        self.iconbitmap(APP_ICON)
         self.wm_protocol("WM_DELETE_WINDOW", self.on_close)
 
         self.help = ctk.CTkLabel(
@@ -95,8 +99,8 @@ class FeedbackAPI(ctk.CTkToplevel):
 
     def get_saved(self):
         """Return list of locally saved feedbacks."""
-        if os.path.exists(fb_path):
-            with open(fb_path, "r") as r:
+        if os.path.exists(FB_PATH):
+            with open(FB_PATH, "r") as r:
                 try:
                     return json.load(r)
                 except json.JSONDecodeError:
@@ -113,7 +117,7 @@ class FeedbackAPI(ctk.CTkToplevel):
         self.body = self.textbox.get("1.0", "end-1c").strip()
 
         self.data = {
-            "app_name": app_name,
+            "APP_NAME": APP_NAME,
             "user_name": self.user_name,
             "follow_up": self.email_name,
             "user_feedback": self.body,
@@ -131,18 +135,18 @@ class FeedbackAPI(ctk.CTkToplevel):
 
     def get_app_log(self):
         """Return the last 100 lines of the app log file."""
-        log_path = pathlib.Path(logs_file)
+        log_path = pathlib.Path(LOGS_FILE)
         if log_path.exists():
             try:
-                with open(log_path, "r") as log_file:
-                    lines = log_file.readlines()
+                with open(log_path, "r") as lf:
+                    lines = lf.readlines()
                     return "".join(lines[-5:])  # Return last 5 lines
             except Exception as e:
                 logging.error(f"Error reading log file: {e}")
                 return "Could not read log file."
         return "Log file does not exist."
 
-    def connected_to_server(self, url=BMTb_FEEDBACK_SERVER):
+    def connected_to_server(self, url=BMTB_FEEDBACK_SERVER):
         try:
             logging.info(f"Attempting to connect to server at '{url}'")
             response = requests.get(url, timeout=60)
@@ -165,7 +169,7 @@ class FeedbackAPI(ctk.CTkToplevel):
             logging.error(f"An unexpected error occurred: {e}")
             return False
 
-    def send_feedback(self, data={}, url=BMTb_FEEDBACK_SERVER):
+    def send_feedback(self, data={}, url=BMTB_FEEDBACK_SERVER):
         """This function is called from the GUI and
         as long as there is internet, it usually works well"""
 
@@ -247,7 +251,7 @@ class FeedbackAPI(ctk.CTkToplevel):
                     "your feedback and will send it when "
                     "you are online.")
                 self.on_close()
-            
+
             self.on_close()
 
     def on_close(self):
@@ -265,23 +269,32 @@ class FeedbackAPI(ctk.CTkToplevel):
         else:
             self.data = data
 
-        fb_path_ = pathlib.Path(fb_path)
+        FB_PATH_ = pathlib.Path(FB_PATH)
 
         # Read existing feedbacks
         try:
-            with open(fb_path_, "r") as r:
+            with open(FB_PATH_, "r") as r:
                 saved_feedbacks = json.load(r)
                 if not isinstance(saved_feedbacks, list):
                     saved_feedbacks = []
         except json.JSONDecodeError:
             saved_feedbacks = []
+        except FileNotFoundError:
+            logging.error(
+                f"No {FB_PATH_.name}. "
+                f"Will create a {FB_PATH_.name} "
+                "file when saving")
+            saved_feedbacks = []
+        except Exception as e:
+            logging.error(
+                f"An unknown error while trying to read feedback json\n{e}")
 
         # Append new feedback and save
         saved_feedbacks.append(self.data)
-        with open(fb_path_, "w") as w:
+        with open(FB_PATH_, "w") as w:
             json.dump(saved_feedbacks, w)
 
-        logging.info(f"Saved feedback into '{fb_path_.name}'")
+        logging.info(f"Saved feedback into '{FB_PATH_.name}'")
         # tkmsg.showinfo("Saved for later", "We have saved your feedback.")
 
     def _web(self, LINK):
@@ -290,7 +303,7 @@ class FeedbackAPI(ctk.CTkToplevel):
 
     def clear_saved(self):
         """Clear the feedbacks.json file"""
-        with open(fb_path, "w") as w:
+        with open(FB_PATH, "w") as w:
             json.dump([], w)
 
     def check_periodically(self):
@@ -298,7 +311,7 @@ class FeedbackAPI(ctk.CTkToplevel):
         while True:
             saved_feedbacks = self.get_saved()
             # XXX
-            if saved_feedbacks and has_internet():
+            if saved_feedbacks and (has_internet() or self.connected_to_server()):
                 logging.info(
                     f"Sending {len(saved_feedbacks)} saved feedback(s)..."
                 )

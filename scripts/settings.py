@@ -2,8 +2,8 @@ import tkinter.messagebox as tkmsg
 import customtkinter as ctk
 import os
 from scripts.constants import (
-    pass_file,
-    app_icon,
+    PASS_FILE,
+    APP_ICON
 
 )
 from scripts.utils import (
@@ -18,7 +18,7 @@ class SettingsWindow(ctk.CTkToplevel):
         super().__init__(parent)
         self.title("Settings")
         self.geometry("300x350")
-        self.wm_iconbitmap(app_icon)
+        self.wm_iconbitmap(APP_ICON)
         # add a scrollable
         self.resizable(False, True)
         self.transient(parent)   # Tie dialog to parent (only on top of it)
@@ -65,7 +65,7 @@ class SettingsWindow(ctk.CTkToplevel):
 
         # Set icon for the dialog window
         try:
-            dialog.winfo_toplevel().iconbitmap(app_icon)
+            dialog.winfo_toplevel().iconbitmap(APP_ICON)
             # or, if you prefer using wm_iconphoto:
             # from PIL import Image, ImageTk
             # icon_image = ImageTk.PhotoImage(file=r"C:\path\to\logo.png")
@@ -88,7 +88,7 @@ class SettingsWindow(ctk.CTkToplevel):
         But allow for him to enter his recovery code to make it
         easier
         """
-        if not os.path.exists(pass_file):
+        if not os.path.exists(PASS_FILE):
             tkmsg.showerror("Error", "No password set yet.")
             return False
 
@@ -97,7 +97,7 @@ class SettingsWindow(ctk.CTkToplevel):
         if entered is None:
             return False
 
-        with open(pass_file, "r") as f:
+        with open(PASS_FILE, "r") as f:
             stored_hash = f.readline().strip()
 
         if self.cipher.pass_hash(entered) == stored_hash:
@@ -117,6 +117,6 @@ class SettingsWindow(ctk.CTkToplevel):
             tkmsg.showinfo("Info", "Password change cancelled.")
             return
 
-        with open(pass_file, "w") as f:
+        with open(PASS_FILE, "w") as f:
             f.write(self.cipher.pass_hash(new_pass))
         tkmsg.showinfo("Info", "Password changed successfully.")
