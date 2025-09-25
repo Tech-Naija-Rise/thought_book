@@ -16,3 +16,4 @@ autocompleteAI/
 ac.py
 *.nsi
 *.exe
+*.info
