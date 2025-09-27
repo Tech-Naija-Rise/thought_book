@@ -11,24 +11,24 @@ from pathlib import Path
 import win32com.client
 
 
-from scripts.constants import app_name
+from scripts.constants import APP_NAME
 
 
 def build_exe(script_path):
     script_path = Path(script_path).resolve()
-    cmd = f'pyinstaller --noconfirm -n "{app_name}" --noconsole --onefile "{script_path}"'
+    cmd = f'pyinstaller --noconfirm -n "{APP_NAME}" --noconsole --onefile "{script_path}"'
     print(cmd)
     os.system(cmd)
 
     # cleanup unwanted artifacts
-    for item in ["build", "__pycache__", f"{app_name}.spec"]:
+    for item in ["build", "__pycache__", f"{APP_NAME}.spec"]:
         p = Path(item)
         if p.is_dir():
             shutil.rmtree(p, ignore_errors=True)
         elif p.is_file():
             p.unlink(missing_ok=True)
 # dist\Thought Book\Thought Book.exe
-    return script_path.parent / "dist" / (app_name + ".exe")
+    return script_path.parent / "dist" / (APP_NAME + ".exe")
 
 
 def create_shortcut(target, shortcut_path, hotkey=None, workdir=None, description="", icon=None):
@@ -55,7 +55,7 @@ def main():
 
     # 2. Create shortcut on Desktop
     desktop = Path.home() / "Desktop"
-    shortcut_path = desktop / f"{app_name}.lnk"
+    shortcut_path = desktop / f"{APP_NAME}.lnk"
     create_shortcut(
         target=exe_path,
         shortcut_path=shortcut_path,

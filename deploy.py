@@ -5,7 +5,7 @@ import re
 import shutil
 from pathlib import Path
 import sys
-from scripts.constants import APP_NAME, APP_ICON, APP_VERSION
+from scripts.constants import APP_NAME, APP_ICON, APP_VERSION, APP_SHORT_NAME
 
 # -----------------------------------------
 # This is info to save whenever i deploy so that the version number increases
@@ -26,7 +26,7 @@ if os.path.exists("deploy.info"):
 print(deploy_info)
 # -----------------------------------------
 
-
+# TODO: Fix the checkbutton at the finish page
 NSIS_INSTALLER_TEMPLATE = r"""
 !include "MUI2.nsh"
 !include nsDialogs.nsh
@@ -34,7 +34,7 @@ NSIS_INSTALLER_TEMPLATE = r"""
 
 Name "{APP_NAME}"
 OutFile "dist\{finished_app_installer}"
-InstallDir "$PROGRAMFILES\BM\BMTB"
+InstallDir "$PROGRAMFILES\BM\{APP_SHORT_NAME}"
 RequestExecutionLevel admin
 
 ;--------------------------------
@@ -43,12 +43,21 @@ RequestExecutionLevel admin
 !define MUI_ICON {APP_ICON}
 !define MUI_UNICON {APP_ICON}
 !define MUI_HEADERIMAGE
+!define MUI_HEADERIMAGE_BITMAP .\\imgs\\banner_h.bmp
+!define MUI_WELCOMEFINISHPAGE_BITMAP .\\imgs\\banner_v.bmp
+
+
+BrandingText "TNR Software"
 
 ;--------------------------------
 ; Pages
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_PAGE_FINISH 
+
+!define MUI_FINISHPAGE_SHOW "LaunchPage"
+!define MUI_FINISHPAGE_LEAVE "Finish"
 
 
 !insertmacro MUI_UNPAGE_CONFIRM
@@ -57,11 +66,9 @@ RequestExecutionLevel admin
 
 !insertmacro MUI_LANGUAGE "English"
 
-
 Var LaunchCheckbox
 
-Page custom LaunchPage Finish
-
+; Function 'LaunchPage' will now be called by MUI_FINISHPAGE_SHOW
 Function LaunchPage
     nsDialogs::Create 1018
     Pop $0
@@ -77,6 +84,7 @@ Function LaunchPage
     nsDialogs::Show
 FunctionEnd
 
+; Function 'Finish' will now be called by MUI_FINISHPAGE_LEAVE
 Function Finish
     ; Check if checkbox is checked and launch app
     ${{NSD_GetState}} $LaunchCheckbox $0
@@ -87,9 +95,6 @@ Function Finish
     LaunchApp:
     Exec "$INSTDIR\{APP_NAME}.exe"
 FunctionEnd
-
-
-
 
 
 ;--------------------------------
@@ -108,22 +113,20 @@ Section "Install"
     "$INSTDIR\{APP_NAME}.exe" "" "$INSTDIR\{APP_NAME}.exe" 0 SW_SHOWNORMAL "CTRL|ALT|T" "A place to store your thoughts"
 
     ; Write uninstaller
-    WriteUninstaller "$INSTDIR\Uninstall_BMTB.exe"
+    WriteUninstaller "$INSTDIR\Uninstall_{APP_SHORT_NAME}.exe"
 
     ; ----------------------------
 
     ; Set a unique variable for your app's install path
-    WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "BMTB" "$INSTDIR"
+    WriteRegExpandStr HKCU "Environment" "{APP_SHORT_NAME}" "$INSTDIR"
 
     ; Notify system about env change
     SendMessage ${{HWND_BROADCAST}} ${{WM_SETTINGCHANGE}} 0 "STR:Environment"
 
-        
-
     ; Add registry for Add/Remove Programs
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "DisplayName" "{APP_NAME}"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "DisplayVersion" "{APP_VERSION}"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "UninstallString" "$INSTDIR\Uninstall_BMTB.exe"
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "UninstallString" "$INSTDIR\Uninstall_{APP_SHORT_NAME}.exe"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "InstallLocation" "$INSTDIR"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "Publisher" "TNR Software"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "DisplayIcon" "$INSTDIR\{APP_NAME}.exe"
@@ -136,15 +139,15 @@ Section "Uninstall"
     RMDir "$SMPROGRAMS\{APP_NAME}"
     Delete "$DESKTOP\{APP_NAME}.lnk"
 
+
     ; ----------------------------
     ; Remove the unique variable
-    DeleteRegValue HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "BMTB"
+    DeleteRegValue HKCU "Environment" "{APP_SHORT_NAME}"
 
-    
+    ; Notify system about env change
     SendMessage ${{HWND_BROADCAST}} ${{WM_SETTINGCHANGE}} 0 "STR:Environment"
 
-
-
+    
     ; Remove registry entry
     DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}"
 
@@ -171,7 +174,7 @@ def build_exe(script_path="notes_app.py", d_i=deploy_info):
     os.system(cmd)
 
     # cleanup
-    for item in ["build", "__pycache__"]:
+    for item in ["build", "__pycache__", "__spec__"]:
         p = Path(item)
         if p.is_dir():
             shutil.rmtree(p, ignore_errors=True)
@@ -185,7 +188,7 @@ def write_nsi(d_i=deploy_info):
     APP_NAME = d_i['APP_NAME']
     APP_VERSION = d_i['APP_VERSION']
 
-    finished_app_installer = "BMTB_Installer_" + APP_VERSION + ".exe"
+    finished_app_installer = f"{APP_SHORT_NAME}_Installer_" + APP_VERSION + ".exe"
     nsi_path = Path(".") / f"{APP_NAME}.nsi"
 
     with open(nsi_path, "w", encoding="utf-8") as f:
@@ -193,6 +196,7 @@ def write_nsi(d_i=deploy_info):
             APP_NAME=APP_NAME,
             APP_VERSION=APP_VERSION,
             APP_ICON=APP_ICON,
+            APP_SHORT_NAME=APP_SHORT_NAME,
             finished_app_installer=finished_app_installer,
         ))
 
@@ -255,17 +259,19 @@ def main():
 
     start = confirm_version()
 
-    # print("\n", "---"*20)
-    # print(f"Making {start} changes to the app...")
-    # print(f"Version: {deploy_info['APP_VERSION']}")
-    # print("---"*20, "\n")
+    start = "1.0.0"
 
-    # print("---"*20)
-    # # Build the executable
-    # print("Building the executable...")
-    # exe_path = build_exe(d_i=deploy_info)
-    # print(f"Built exe: {exe_path}")
-    # print("---"*20)
+    print("\n", "---"*20)
+    print(f"Making {start} changes to the app...")
+    print(f"Version: {deploy_info['APP_VERSION']}")
+    print("---"*20, "\n")
+
+    print("---"*20)
+    # Build the executable
+    print("Building the executable...")
+    exe_path = build_exe(d_i=deploy_info)
+    print(f"Built exe: {exe_path}")
+    print("---"*20)
 
     # Make the nsis and compile it
     print("Writing NSIS script...")

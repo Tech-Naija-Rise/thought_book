@@ -39,7 +39,6 @@ import customtkinter as ctk
 
 
 from scripts.constants import (
-    LOGS_FILE,
     PASS_FILE,
     APP_NAME,
     APP_ICON,
@@ -54,10 +53,10 @@ from scripts.utils import (
     verify_recovery_key,
     has_internet
 )
-from scripts.settings import SettingsWindow
+from scripts.settings import SettingsWindow, load_settings
+
 
 # setup logging once (top-level of your file, before class)
-
 
 
 class NotesApp(ctk.CTk):
@@ -80,24 +79,25 @@ class NotesApp(ctk.CTk):
         self.password_file = PASS_FILE
 
         # TODO: when app starts, it opens the main UI
-        # the password setter appears. Makes good UX
+        # then password setter appears. Makes good UX
 
-        self.locked = True
-        while self.locked:
-            result = self.ask_password()
-            if result is True:
-                self.locked = False
-            elif result == "Cancelled":
-                sys.exit()
-            elif result == "exit":
-                sys.exit()
-            else:
-                tkmsg.showerror("Error", "Incorrect password. Try again.")
-        
+        settings = load_settings()
+        self.locked = False
+
+        if settings.get("request_password", False):
+            self.locked = True
+            while self.locked:
+                result = self.ask_password()
+                if result is True:
+                    self.locked = False
+                elif result in ("Cancelled", "exit"):
+                    sys.exit()
+                else:
+                    tkmsg.showerror("Error", "Incorrect password. Try again.")
+
         self.current_note = ""
         self.max_words_b4_training = 1000
         self.focused = ctk.BooleanVar(self, False, "focused")
-
 
         self.start_ui()
 
@@ -228,35 +228,30 @@ class NotesApp(ctk.CTk):
             self.sidebar.pack_forget()
 
     def on_close(self):
-        r"""whenever i want to close, I would check for POA's
-        if there are any POA's in that current text, then
-        suggest whether to add them to BMA or not.
-
-        if yes, then call on BMA to add those POA's
-
-        meaning the format has to be correct
-
-        The format is simple markdown format:
-
-            [ ] what i want to do
-
-        so it would show up in BMA as a simple checkbutton with that exact
-        text as is in the POA list
-
-        so the regex for every POA would be: TODO \[\s\]\s+\w+.*
-
-        """
+        r""""""
         try:
-            self.bma.make_activities(self.get_poas(self.current_note))
+            poas = self.get_poas(self.get_current_note()[1])
+            self.bma.make_activities(poas)
         except Exception as e:
             logging.error(f"While closing, something's happening: {e}")
         finally:
             logging.info(
-                f"Currently threads running are: {threading.active_count()}")
+                f"Closed app successfully")
             self.destroy()  # immediately close window
 
+    def get_current_note(self, index_to_save=None):
+        idx = index_to_save if index_to_save is not None else self.current_index
+        content = self.textbox.get("1.0", "end-1c").strip()
+
+        # This line is hackable but not from outside
+        # content = self.encrypt(content)
+
+        # Encryption is not needed in this particular function
+        # because poa checker will need to see the raw text
+        return idx, content
+
     def get_poas(self, current_note):
-        if current_note:
+        if current_note.strip():
             self.poas = re.findall(
                 # find anything that follows []
                 # and is before a newline or full stop
@@ -366,7 +361,7 @@ class NotesApp(ctk.CTk):
 
         if code is None:
             return False
-        
+
         elif code == "exit":
             exit()
 
@@ -391,7 +386,7 @@ class NotesApp(ctk.CTk):
                 "Password", "Enter password (or leave blank to reset):", show="*")
             if entered is None:
                 return "Cancelled"
-            
+
             elif entered == "exit":
                 return "exit"
 
@@ -422,10 +417,9 @@ class NotesApp(ctk.CTk):
 
     def save_current_note(self, index_to_save=None):
         """Save the note being edited (or a specific index)"""
-        idx = index_to_save if index_to_save is not None else self.current_index
-        content = self.textbox.get("1.0", "end-1c").strip()
+        idx, content = self.get_current_note(index_to_save)
 
-        # This line is hackable but not from outside
+        # Always encrypt before saving
         content = self.encrypt(content)
         title = self.title_entry.get()
 
@@ -503,39 +497,3 @@ def main():
 if __name__ == "__main__":
     # THIS IS THE MAIN ENTRY POINT OF THE ENTIRE PROJECT
     main()
-
-
-"""
-# Tasks for saturday
-
-2. add feedback system 
-    [x] write fastAPI server locally
-    [x] push to gh
-    [x] create a web service on render
-    [x] GET PUBLIC URL
-    [x] use URL in notes app when user hits send feedback
-        [x] if online, send immediately
-        [x] if offline save locally and retry later
-         
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-3. add auto check for updates
-    [] make a website
-
-    
-"""

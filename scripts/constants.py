@@ -17,15 +17,20 @@ __all__ = [
 # --- App Info ---
 APP_NAME = "Thought Book"
 APP_VERSION = "1.0.0"
+APP_SHORT_NAME = "BMTB"
 
 # --- Resource Path Helper ---
+
+
 def resource_path(relative_path: Path) -> Path:
     """Return absolute path to resource (works for dev & PyInstaller)."""
     try:
-        base_path = Path(sys._MEIPASS)  # type: ignore # PyInstaller temp folder
+        # type: ignore # PyInstaller temp folder
+        base_path = Path(sys._MEIPASS)  # type: ignore
     except AttributeError:
         base_path = Path(__file__).resolve().parent.parent
     return base_path / relative_path
+
 
 # --- Main Folders ---
 MAIN_FOLDER = Path(__file__).resolve().parent.parent
@@ -53,6 +58,7 @@ RECOVERY_FILE = NOTES_FOLDER / "recovery.key"
 PASS_FILE = NOTES_FOLDER / "pass.pass"
 LOGS_FILE = NOTES_FOLDER / "app.log"
 FB_PATH = NOTES_FOLDER / "feedbacks.json"
+SETTINGS_FILE = NOTES_FOLDER / "settings.json"
 
 # --- Logging ---
 logging.basicConfig(

@@ -3,12 +3,29 @@ import customtkinter as ctk
 import os
 from scripts.constants import (
     PASS_FILE,
-    APP_ICON
+    APP_ICON,
+    SETTINGS_FILE,
 
 )
 from scripts.utils import (
     askstring, clear_all_notes)
 from scripts.feedback_collection import FeedbackAPI
+
+
+
+import json
+
+def load_settings():
+    if not os.path.exists(SETTINGS_FILE):
+        return {"request_password": False}
+    with open(SETTINGS_FILE, "r") as f:
+        return json.load(f)
+
+def save_settings(settings):
+    with open(SETTINGS_FILE, "w") as f:
+        json.dump(settings, f, indent=2)
+
+
 
 
 class SettingsWindow(ctk.CTkToplevel):
@@ -32,6 +49,23 @@ class SettingsWindow(ctk.CTkToplevel):
             self, text="Change Password", command=self.change_password)
         self.change_pass_btn.pack(pady=5)
 
+        # Startup lock option
+        ctk.CTkLabel(self, text="Security").pack(pady=(20, 5))
+        settings = load_settings()
+        self.startup_lock_var = ctk.BooleanVar(value=settings.get("request_password", False))
+        self.settings = settings
+
+        self.startup_lock_switch = ctk.CTkSwitch(
+            self,
+            text="Request password at startup",
+            variable=self.startup_lock_var,
+            command=self.toggle_startup_lock,
+        )
+        self.startup_lock_switch.pack(pady=5)
+
+
+
+
         # Divider
         ctk.CTkLabel(self, text="Notes Management").pack(pady=(20, 5))
 
@@ -50,6 +84,38 @@ class SettingsWindow(ctk.CTkToplevel):
         self.feedback_btn = ctk.CTkButton(
             self, text="Give feedback", command=self.feedback_collect)
         self.feedback_btn.pack(pady=5)
+
+    def toggle_startup_lock(self):
+        """Turn on/off password request at startup (tracked in settings.json)."""
+        if self.startup_lock_var.get():
+            # Switch turned ON → immediately set password
+            new_pass = askstring("Set Password", "Enter a new password:", show="*")
+            if not new_pass:
+                tkmsg.showinfo("Info", "Password setup cancelled.")
+                self.startup_lock_var.set(False)
+                return
+
+            recovery = askstring("Recovery Code", "Enter a recovery code (save it safely):", show="*")
+            if not recovery:
+                tkmsg.showinfo("Info", "Recovery setup cancelled.")
+                self.startup_lock_var.set(False)
+                return
+
+            with open(PASS_FILE, "w") as f:
+                f.write(self.cipher.pass_hash(new_pass) + "\n")
+                f.write(self.cipher.pass_hash(recovery))
+
+            self.settings["request_password"] = True
+            save_settings(self.settings)
+            tkmsg.showinfo("Info", "Password protection enabled.")
+
+        else:
+            # Switch turned OFF → keep password file but ignore it
+            self.settings["request_password"] = False
+            save_settings(self.settings)
+            tkmsg.showinfo("Info", "Password request at startup disabled.")
+
+
 
     def feedback_collect(self, event=None):
         self.feedbackAPI = FeedbackAPI(self)
