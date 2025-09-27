@@ -5,7 +5,7 @@ _A fast, offline-first, and private space for your thoughts._
 ---
 
 ## 🌍 Why Thought Book?  
-Most note apps are slow, online-dependent or not private. I needed a way to capture ideas instantly, without worrying about internet or privacy. Thought Book was built for exactly that:  
+Most note apps are slow, online-dependent, insecure, and leave your notes scattered and disorganized — like Notepad with its endless .txt files. I wanted a faster, private way to capture ideas instantly. Thought Book was built for exactly that:  
 
 - 📝 Capture a thought the moment it comes.  
 - 🚫 No internet required.  
