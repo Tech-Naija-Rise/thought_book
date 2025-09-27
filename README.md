@@ -24,7 +24,7 @@ Most note apps are slow, online-dependent, or cluttered. I needed a way to captu
 ---
 
 ## 🖼️ Demo  
-<img width="384" height="201" alt="image" src="https://github.com/user-attachments/assets/3c64e763-3c1b-45d4-b6dc-25f9b418decc" />
+<img width="960" height="504" alt="image" src="https://github.com/user-attachments/assets/3c64e763-3c1b-45d4-b6dc-25f9b418decc" />
 
 
 ---
