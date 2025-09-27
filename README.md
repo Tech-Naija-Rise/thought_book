@@ -1,44 +1,75 @@
+
 # Thought Book ✍️  
-_A dedicated, offline, and private space for your thoughts._  
+_A fast, offline-first, and private space for your thoughts._  
 
 ---
 
-## 🌍 Why I Built It  
-I often wanted to capture a thought quickly, but:  
-- No pen around.  
-- Google Notes didn’t work offline.  
-- Notepad left private notes exposed.  
+## 🌍 Why Thought Book?  
+Most note apps are slow, online-dependent, or cluttered. I needed a way to capture ideas instantly, without worrying about internet or privacy. Thought Book was built for exactly that:  
+
+- 📝 Capture a thought the moment it comes.  
+- 🚫 No internet required.  
+- 🔒 Local and secure by default.  
 
 ---
 
-## 💡 The Solution  
-- Opens instantly with a shortcut.  
-- Works fully offline.  
-- Encrypts notes for privacy.  
-- Backups to Google Drive (lightly encrypted).  
-[Download Thought Book app](https://github.com/Mahmudumar/thought_book/releases/latest)
+## 💡 Key Features  
+- **Instant launch** with a global shortcut.  
+- **Offline-only** by design — works anywhere.  
+- **Local encryption** to keep your notes private.  
+- **Optional backup** (lightly encrypted) to Google Drive.  
+
+👉 [Download the latest release](https://github.com/TNR-org/thought_book/releases/latest)  
+
 ---
 
 ## 🖼️ Demo  
-![alt text](./docs/imgs/tb.png)
-![alt text](./docs/imgs/tb2.png)
+![Thought Book main view](./docs/imgs/tb.png)  
+![Writing flow](./docs/imgs/tb2.png)  
 
 ---
 
-## 🚀 How to Use  
+## 🚀 Getting Started  
+**Option 1: Use the installer**  
+- [Download here](https://github.com/TNR-org/thought_book/releases/latest)  
+- Run the installer, set your shortcut, and start writing.  
+
+**Option 2: Run from source**  
 1. Clone the repo  
-2. Run `deploy.py`  
-3. Press your shortcut → start writing
+   ```bash
+   git clone https://github.com/TNR-org/thought_book.git
+   cd thought_book
+````
+
+2. Run the deploy script
+
+   ```bash
+   python deploy.py
+   ```
+3. Press your shortcut → start capturing thoughts.
 
 ---
 
-## 🔒 Privacy First  
-Your notes are stored locally, encrypted, and manually backed up securely to your Drive. Learn how to [backup your private notes](./docs/how_to.md).
+## 🔒 Privacy First
+
+* All notes are stored locally and encrypted.
+* You control backups. See the [how-to guide](./docs/how_to.md) for secure backup instructions.
 
 ---
 
-## ⚠️ Notes
-For full documentation of the app, visit the documentation of this project [here](./docs/README.md)
+## 📚 Documentation
 
-# Download
-If you don't have python on your computer, you can just download it here: [Thought Book app](https://github.com/Mahmudumar/thought_book/releases/latest)
+Full project documentation is available [here](./docs/README.md).
+
+---
+
+## ⚡ Contribution
+
+We welcome feedback and contributions. Open an issue, submit a PR, or share suggestions to help us improve.
+
+---
+
+## 📥 Download
+
+If you don’t have Python installed, no problem — just grab the ready-to-use build:
+👉 [Thought Book app](https://github.com/TNR-org/thought_book/releases/latest)
