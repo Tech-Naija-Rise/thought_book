@@ -19,7 +19,7 @@ Most note apps are slow, online-dependent, or cluttered. I needed a way to captu
 - **Local encryption** to keep your notes private.  
 - **Optional backup** (lightly encrypted) to Google Drive.  
 
-👉 [Download the latest release](https://github.com/TNR-org/thought_book/releases/latest)  
+👉 [Download the latest release](https://github.com/Tech-Naija-Rise/thought_book/releases/latest)  
 
 ---
 
@@ -31,13 +31,13 @@ Most note apps are slow, online-dependent, or cluttered. I needed a way to captu
 
 ## 🚀 Getting Started  
 **Option 1: Use the installer**  
-- [Download here](https://github.com/TNR-org/thought_book/releases/latest)  
+- [Download here](https://github.com/Tech-Naija-Rise/thought_book/releases/latest)  
 - Run the installer, set your shortcut, and start writing.  
 
 **Option 2: Run from source**  
 1. Clone the repo  
    ```bash
-   git clone https://github.com/TNR-org/thought_book.git
+   git clone https://github.com/Tech-Naija-Rise/thought_book.git
    cd thought_book
 ````
 
@@ -72,4 +72,4 @@ We welcome feedback and contributions. Open an issue, submit a PR, or share sugg
 ## 📥 Download
 
 If you don’t have Python installed, no problem — just grab the ready-to-use build:
-👉 [Thought Book app](https://github.com/TNR-org/thought_book/releases/latest)
+👉 [Thought Book app](https://github.com/Tech-Naija-Rise/thought_book/releases/latest)
