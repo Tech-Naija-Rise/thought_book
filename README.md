@@ -24,8 +24,7 @@ Most note apps are slow, online-dependent, or cluttered. I needed a way to captu
 ---
 
 ## 🖼️ Demo  
-![Thought Book main view](./docs/imgs/tb.png)  
-![Writing flow](./docs/imgs/tb2.png)  
+
 
 ---
 

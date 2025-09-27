@@ -121,7 +121,8 @@ Section "Install"
     WriteRegExpandStr HKCU "Environment" "{APP_SHORT_NAME}" "$INSTDIR"
 
     ; Notify system about env change
-    SendMessage ${{HWND_BROADCAST}} ${{WM_SETTINGCHANGE}} 0 "STR:Environment"
+    System::Call 'user32::SendMessageTimeout(i ${{HWND_BROADCAST}}, i ${{WM_SETTINGCHANGE}}, i 0, t "Environment", i 0, i 1000, *i .r0)'
+
 
     ; Add registry for Add/Remove Programs
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "DisplayName" "{APP_NAME}"
@@ -145,7 +146,7 @@ Section "Uninstall"
     DeleteRegValue HKCU "Environment" "{APP_SHORT_NAME}"
 
     ; Notify system about env change
-    SendMessage ${{HWND_BROADCAST}} ${{WM_SETTINGCHANGE}} 0 "STR:Environment"
+    System::Call 'user32::SendMessageTimeout(i ${{HWND_BROADCAST}}, i ${{WM_SETTINGCHANGE}}, i 0, t "Environment", i 0, i 1000, *i .r0)'
 
     
     ; Remove registry entry
@@ -188,7 +189,8 @@ def write_nsi(d_i=deploy_info):
     APP_NAME = d_i['APP_NAME']
     APP_VERSION = d_i['APP_VERSION']
 
-    finished_app_installer = f"{APP_SHORT_NAME}_Installer_" + APP_VERSION + ".exe"
+    finished_app_installer = f"{APP_SHORT_NAME}_Installer_" + \
+        APP_VERSION + ".exe"
     nsi_path = Path(".") / f"{APP_NAME}.nsi"
 
     with open(nsi_path, "w", encoding="utf-8") as f:
@@ -249,29 +251,28 @@ def confirm_version():
         print("Making program as is with "
               f"the explicit version number {start}")
         deploy_info['APP_VERSION'] = start.strip()
-    
-    
+
     deploy_info['change_made'] = start
     return start
 
 
 def main():
 
-    start = confirm_version()
+    # start = confirm_version()
 
-    start = "1.0.0"
+    # start = "1.0.0"
 
-    print("\n", "---"*20)
-    print(f"Making {start} changes to the app...")
-    print(f"Version: {deploy_info['APP_VERSION']}")
-    print("---"*20, "\n")
+    # print("\n", "---"*20)
+    # print(f"Making {start} changes to the app...")
+    # print(f"Version: {deploy_info['APP_VERSION']}")
+    # print("---"*20, "\n")
 
-    print("---"*20)
-    # Build the executable
-    print("Building the executable...")
-    exe_path = build_exe(d_i=deploy_info)
-    print(f"Built exe: {exe_path}")
-    print("---"*20)
+    # print("---"*20)
+    # # Build the executable
+    # print("Building the executable...")
+    # exe_path = build_exe(d_i=deploy_info)
+    # print(f"Built exe: {exe_path}")
+    # print("---"*20)
 
     # Make the nsis and compile it
     print("Writing NSIS script...")
