@@ -39,7 +39,7 @@ Most note apps are slow, online-dependent, or cluttered. I needed a way to captu
    ```bash
    git clone https://github.com/Tech-Naija-Rise/thought_book.git
    cd thought_book
-````
+    ```
 
 2. Run the deploy script
 
