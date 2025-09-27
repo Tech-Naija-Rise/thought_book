@@ -24,7 +24,7 @@ Most note apps are slow, online-dependent, insecure, and leave your notes scatte
 ---
 
 ## 🖼️ Demo  
-<img width="960" height="504" alt="image" src="https://github.com/user-attachments/assets/3c64e763-3c1b-45d4-b6dc-25f9b418decc" />
+<img width="960" height="506" alt="image" src="https://github.com/user-attachments/assets/c8acf7ca-b729-4a41-9a7c-1dcf6e091797" />
 
 
 ---
