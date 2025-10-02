@@ -304,7 +304,7 @@ class SimpleSubstitution:
         return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def askstring(title="Input", prompt="Enter value:", show=None):
+def askstring(title="Input", prompt="Enter value:", show=None, placeholder="", width=300, height=150):
     """Universal CTk askstring dialog. Returns str or None."""
 
     # Root hidden window
@@ -314,17 +314,18 @@ def askstring(title="Input", prompt="Enter value:", show=None):
     # Create dialog
     dialog = ctk.CTkToplevel(root)
     dialog.title(title)
-    dialog.winfo_toplevel().geometry("300x150")
+    dialog.winfo_toplevel().geometry(f"{width}x{height}")
     dialog.wm_iconbitmap(APP_ICON)
     dialog.transient(root)   # Tie dialog to root (only on top of it)
     dialog.grab_set()        # Keep it modal (block other app windows)
 
     # Prompt
-    label = ctk.CTkLabel(dialog, text=prompt)
+    label = ctk.CTkLabel(dialog, text=prompt,wraplength=300)
     label.pack(pady=(15, 5))
 
     # Entry
-    entry = ctk.CTkEntry(dialog, show=show, width=220)
+    entry = ctk.CTkEntry(dialog, show=show, width=220,
+                         placeholder_text=placeholder)
     entry.pack(pady=5)
 
     dialog.after_idle(lambda: entry.focus_set())

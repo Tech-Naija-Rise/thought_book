@@ -25,7 +25,6 @@ Usage:
 Author: Umar Mahmud
 """
 
-import threading
 import re
 import os
 import sys
@@ -39,9 +38,13 @@ import customtkinter as ctk
 
 
 from scripts.constants import (
+    METRICS_FILE,
     PASS_FILE,
     APP_NAME,
     APP_ICON,
+    METRICS_FILE_CONTENT,
+    write_file,
+    USER_APP_ID
 )
 from scripts.bma_express import ActivitiesAPI
 from scripts.utils import (
@@ -100,6 +103,84 @@ class NotesApp(ctk.CTk):
         self.focused = ctk.BooleanVar(self, False, "focused")
 
         self.start_ui()
+        self.freemium_locked = True
+                
+        self.__freemium_note_count_feature(self.freemium_locked)
+
+    def __freemium_note_count_feature(self, locked=True):
+        """This is for the freemium
+        When the app starts, we check
+        for a file with a hashed number
+        if the number of notes reaches
+        that number, then we remind them
+        and redirect to website to own the 
+        app.
+
+        The button to add more notes will be disabled
+        so as not to have more than `note_count_limit`
+
+        In the first place, don't allow them to create 
+        more than 10
+        """
+        if locked:
+            info = METRICS_FILE_CONTENT
+            try:
+                count = int(info['note_count_limit'])
+                urc = int(info['upgrade_reminder_count'])
+                mur = int(info['max_upgrade_remind'])
+            except KeyError as e:
+                logging.error(f"Can't find keys: {e}")
+
+            if self.get_note_count() >= count:
+                # remind once only TODO: remove 'not'
+                if not int(urc) < int(mur):
+                    ans = tkmsg.askyesnocancel("Free version limit reached",
+                                               "Your free note limit has been reached\n"
+                                               "Would you like to upgrade now "
+                                               "to have access "
+                                               "to all features?")
+
+                    info['upgrade_reminder_count'] += 1
+                    logging.info(info)
+                    write_file(METRICS_FILE, info)
+
+                    if ans is not None:
+                        if ans:
+                            # go to the webpage
+                            self.freemium_reg_flow()
+                        else:
+                            # lock the other notes created
+                            pass
+
+                self.add_button.configure(state="disabled")
+
+            elif self.get_note_count() < count:
+                self.add_button.configure(state="normal")
+        else:
+            self.add_button.configure(state="normal")
+
+    def freemium_reg_flow(self):
+        freemium_reg_code = askstring(
+            "App Payment Code",
+            "When your payment is confirmed, "
+            "you will be given a code.\n"
+            "Copy the 10 digit "
+            "code and paste here.", placeholder="Enter Code"
+        )
+
+        self.validate_freemium_reg_code()
+
+        # if freemium_reg code is valid, then unlock that feature
+        # else, keep it locked.
+
+        # meaning that we have to check in the beginning if the app
+        # is registered so as to unlock before starting app.
+
+    def validate_freemium_reg_code(self):
+        pass
+
+    def get_note_count(self):
+        return len(self.load_notes())
 
     def start_ui(self):
         if not self.locked:
@@ -298,7 +379,13 @@ class NotesApp(ctk.CTk):
         return get_notes()
 
     def refresh_list(self):
-        """Refresh the sidebar list of notes"""
+        """Refresh the sidebar list of notes
+
+        For freemium: we will always check the note
+        limit and modify the add button accordingly.
+
+        """
+
         # Clear old buttons
         for btn in self.note_buttons:
             btn.destroy()
@@ -350,6 +437,9 @@ class NotesApp(ctk.CTk):
                 self.current_index = None
 
                 self.refresh_list()
+
+        # Freemium feature
+        self.__freemium_note_count_feature()
 
     def forgot_password(self):
         code = askstring(
@@ -464,7 +554,11 @@ class NotesApp(ctk.CTk):
         return
 
     def add_note(self):
-        """Create a new note, saving current note first"""
+        """Create a new note, saving current note first
+        freemium model
+        when user hits 10 notes, that's it. Nudge to pay once
+        then lock button
+        """
         if self.current_index is not None:
             self.save_current_note(index_to_save=self.current_index)
 
@@ -479,6 +573,7 @@ class NotesApp(ctk.CTk):
 
         self.title_entry.select_range(0, "end")
         self.title_entry.focus()
+        self.__freemium_note_count_feature()
 
     def check_updates(self):
         """Check for updates from DOWNLOAD link"""
@@ -492,6 +587,9 @@ def main():
     app = NotesApp()
     app.iconbitmap(APP_ICON)
     app.mainloop()
+
+# When users notes reach 10
+# nudge for owning the app
 
 
 if __name__ == "__main__":
