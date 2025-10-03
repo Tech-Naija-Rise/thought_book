@@ -68,7 +68,10 @@ from scripts.utils import (
 from scripts.settings import SettingsWindow, load_settings
 
 
-# setup logging once (top-level of your file, before class)
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+import base64
+
 
 
 class NotesApp(ctk.CTk):
@@ -113,8 +116,37 @@ class NotesApp(ctk.CTk):
 
         self.start_ui()
         self.freemium_locked = True
+        if self.freemium_locked:
+            self.ask_license()
 
         self.__freemium_note_count_feature(self.freemium_locked)
+
+
+    def validate_license(self, license_data, license_key):
+        # Load public key (can be bundled inside the app or from env)
+        with open("public_key.pem", "rb") as f:
+            public_key = serialization.load_pem_public_key(f.read())
+        try:
+            # Decode license key from base64
+            signature = base64.b64decode(license_key)
+
+            # Verify signature
+            public_key.verify( # type: ignore
+                signature,
+                license_data.encode(),
+                padding.PKCS1v15(),
+                hashes.SHA256()
+            )
+            # Valid license
+            tkmsg.showinfo("Success", "License verified successfully!")
+
+            # Save locally encrypted
+            self.save_encrypted_locally(license_data)
+
+        except Exception as e:
+            tkmsg.showerror("Invalid License", "License key does not match data!")
+            logging.error(f"License verification failed: {e}")
+
 
     def __freemium_note_count_feature(self, locked=True):
         """This is for the freemium
@@ -172,6 +204,90 @@ class NotesApp(ctk.CTk):
             self.add_button.configure(text="Add Note",
                                       command=self.add_note)
 
+    def ask_license(self):
+        if not os.path.exists(LICENSE_KEY_FILE):
+            # Create a modal top-level window
+            license_window = ctk.CTkToplevel(self)
+            license_window.title("Activate NotesApp")
+            license_window.geometry("500x400")
+            license_window.grab_set()  # Make modal
+            license_window.resizable(False, True)
+
+            # Instructions label
+            instructions = ctk.CTkLabel(
+                license_window,
+                text=(
+                    "Welcome to NotesApp!\n\n"
+                    "Please paste your license information below.\n"
+                    "You should have received two things from us:\n"
+                    "1. License Data\n"
+                    "2. License Key\n\n"
+                    "Copy both from your email and paste them below.\n"
+                    "If you haven't purchased a license yet, you can click "
+                ),
+                justify="left",
+                wraplength=460
+            )
+            instructions.pack(pady=(10,0), padx=10, anchor="w")
+
+            # Clickable link
+            def open_purchase_link(event=None):
+                self.freemium_reg_flow()
+
+            link_label = ctk.CTkLabel(
+                license_window,
+                text="here.",
+                text_color="#4a90e2",
+                cursor="hand2",
+                justify="left"
+            )
+            link_label.pack(pady=(0,10), padx=10, anchor="w")
+            link_label.bind("<Button-1>", open_purchase_link)
+            # License Data input
+            license_data_label = ctk.CTkLabel(license_window, text="License Data:")
+            license_data_label.pack(anchor="w", padx=20)
+            license_data_entry = ctk.CTkTextbox(license_window, height=4)
+            license_data_entry.pack(fill="x", padx=20, pady=(0,10))
+
+            # License Key input
+            license_key_label = ctk.CTkLabel(license_window, text="License Key:")
+            license_key_label.pack(anchor="w", padx=20)
+            license_key_entry = ctk.CTkTextbox(license_window, height=2)
+            license_key_entry.pack(fill="x", padx=20, pady=(0,10))
+
+            # Submit button
+            def submit_license():
+                license_data = license_data_entry.get("1.0", "end-1c").strip()
+                license_key = license_key_entry.get("1.0", "end-1c").strip()
+
+                if not license_data or not license_key:
+                    tkmsg.showerror("Missing Data", "Both License Data and License Key are required.")
+                    return
+
+                # Validate the license
+                self.validate_license(license_data, license_key)
+                license_window.destroy()
+
+            submit_btn = ctk.CTkButton(license_window, text="Activate", command=submit_license)
+            submit_btn.pack(pady=10)
+
+            license_window.mainloop()
+        else:
+            # validate existing license
+            try:
+                with open(LICENSE_KEY_FILE, "r") as f:
+                    encrypted_license = f.read()
+                license_data = self.cipher.decrypt(encrypted_license)
+                # Here we would ideally re-validate the license
+                # For simplicity, we'll assume it's valid if it decrypts
+                self.freemium_locked = False
+                self.add_button.configure(text="Add Note", command=self.add_note)
+            except Exception as e:
+                logging.error(f"Failed to read/validate existing license: {e}")
+                tkmsg.showerror("Error", "Failed to validate existing license. Please re-enter your license.")
+                os.remove(LICENSE_KEY_FILE)
+                self.ask_license()
+
     def __ask_email(self):
         if not os.path.exists(EMAIL_ID_FILE):
             self.user_email = askstring("Email Required",
@@ -191,7 +307,6 @@ class NotesApp(ctk.CTk):
 
     def __freemium_reg_flow(self):
         try:
-            
             resp = requests.post(f"{TNR_BMTB_SERVER}/payment",
                                  json={"amount": 500,
                                        "email": self.user_email})

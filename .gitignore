@@ -17,3 +17,5 @@ ac.py
 *.nsi
 *.exe
 *.info
+*.pem
+*.key
