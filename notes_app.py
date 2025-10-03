@@ -37,6 +37,7 @@ import webbrowser
 
 
 import customtkinter as ctk
+import requests
 
 
 from scripts.constants import (
