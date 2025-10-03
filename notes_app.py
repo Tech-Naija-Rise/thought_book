@@ -201,17 +201,6 @@ class NotesApp(ctk.CTk):
             webbrowser.open_new_tab(resp.json()['data']['authorization_url'])
             time.sleep(5)
 
-            while True:
-                r = requests.post(
-                    f"{TNR_BMTB_SERVER}/claim", json={"reference": reference, "device_id": USER_APP_ID})
-                j = r.json()
-                if j["status"] == "ok":
-                    license = j["license"]
-                    self.save_encrypted_locally(license)
-                    break
-                # wait a few seconds then retry
-                time.sleep(5)
-
         except Exception as e:
             logging.error(f"Error during payment processing: {e}")
             tkmsg.showerror(
