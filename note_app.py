@@ -1,3 +1,4 @@
+# note_app.py
 """
 Freemium version of the application implemented correctly
 with license key verification using RSA public key cryptography.
@@ -68,13 +69,17 @@ class NotesApp(ctk.CTk):
         # License (must be below because we modify buttons)
         self.license_manager = LicenseManager(self)
         if self.license_manager.check_license():
-            self.unlock_feature_checks(
-                self.license_manager.unlocked_feature_id)
+            self.unlock_feature_checks(self.license_manager.unlocked_feature_id)
+        else:
+            # Prompt user to activate or enter license if not found/invalid
+            self.license_manager.ask_license()
 
     # --- License-based methods ---
     def unlock_feature_checks(self, feature_id):
-        if "premium;unlimited_notes" in feature_id:
-            self.license_manager.unlock_feature(feature_id)
+        # Centralized place to unlock all premium features
+        if "unlimited_notes" in feature_id:
+            self.license_manager.unlock_feature(feature_id, self.add_button)
+        # Add more feature unlocks here as needed
 
 
     # --- UI-based methods ---

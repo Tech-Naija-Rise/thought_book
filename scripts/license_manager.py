@@ -35,10 +35,10 @@ class LicenseManager:
         self.unlocked_feature_id = ""
 
     def unlock_feature(self, feature_id, associated_button):
-        if "unlimited_notes" in feature_id
-            self.master.add_button()
-        
-
+        if "unlimited_notes" in feature_id:
+            associated_button.configure(
+                text="Add Note", command=self.master.add_note)
+            
     def check_license(self):
         """Return True if a valid license exists locally."""
         if not os.path.exists(LICENSE_KEY_FILE):
@@ -46,6 +46,7 @@ class LicenseManager:
         try:
             encrypted_license = read_file(LICENSE_KEY_FILE)
             license_data = self.cipher.decrypt(encrypted_license)
+            print(license_data)
             # Optional: validate license_data format
             return True
         except Exception as e:
@@ -140,6 +141,9 @@ class LicenseManager:
                               padding.PKCS1v15(), hashes.SHA256())  # type: ignore
             tkmsg.showinfo("Success", "License verified successfully!")
             self.save_encrypted_locally(license_data)
+            # Centralized unlock after successful activation
+            if hasattr(self.master, "unlock_feature_checks"):
+                self.master.unlock_feature_checks("unlimited_notes")
         except Exception as e:
             tkmsg.showerror("Invalid License",
                             "License key does not match data!")
