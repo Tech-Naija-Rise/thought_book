@@ -30,19 +30,28 @@ import os
 import sys
 import logging
 import datetime
+import threading
+import time
 from tkinter import messagebox as tkmsg
 from tkinter.messagebox import askyesno
+import webbrowser
 
 
 import customtkinter as ctk
+import requests
 
 
 from scripts.constants import (
+    EMAIL_ID_FILE,
+    ID_FILE,
+    LICENSE_KEY_FILE,
     METRICS_FILE,
     PASS_FILE,
     APP_NAME,
     APP_ICON,
     METRICS_FILE_CONTENT,
+    TNR_BMTB_SERVER,
+    read_file,
     write_file,
     USER_APP_ID
 )
@@ -104,7 +113,7 @@ class NotesApp(ctk.CTk):
 
         self.start_ui()
         self.freemium_locked = True
-                
+
         self.__freemium_note_count_feature(self.freemium_locked)
 
     def __freemium_note_count_feature(self, locked=True):
@@ -152,29 +161,73 @@ class NotesApp(ctk.CTk):
                             # lock the other notes created
                             pass
 
-                self.add_button.configure(state="disabled")
+                self.add_button.configure(
+                    text="Upgrade to add more",
+                    command=self.freemium_reg_flow)
 
             elif self.get_note_count() < count:
-                self.add_button.configure(state="normal")
+                self.add_button.configure(text="Add Note",
+                                          command=self.add_note)
         else:
-            self.add_button.configure(state="normal")
+            self.add_button.configure(text="Add Note",
+                                      command=self.add_note)
+
+    def __ask_email(self):
+        if not os.path.exists(EMAIL_ID_FILE):
+            self.user_email = askstring("Email Required",
+                                        "Enter your email (required for payment receipt):")
+            info = {"user_email": self.user_email}
+            write_file(EMAIL_ID_FILE, info)
+        else:
+            info = read_file(EMAIL_ID_FILE)
+            self.user_email = info["user_email"]
 
     def freemium_reg_flow(self):
-        freemium_reg_code = askstring(
-            "App Payment Code",
-            "When your payment is confirmed, "
-            "you will be given a code.\n"
-            "Copy the 10 digit "
-            "code and paste here.", placeholder="Enter Code"
-        )
+        self.__ask_email()
+        threading.Thread(target=self.__freemium_reg_flow, daemon=True).start()
 
-        self.validate_freemium_reg_code()
+    def _validate_email(self, email):
+        return True
+
+    def __freemium_reg_flow(self):
+        try:
+
+            resp = requests.post(f"{TNR_BMTB_SERVER}/payment",
+                                 json={"device_id": USER_APP_ID, "amount": 500,
+                                       "email": self.user_email})
+            # open resp.json()['data']['authorization_url'] in webview/browser
+            reference = str(resp.json()["data"]["reference"])
+            logging.info(f"Payment initiated, reference: {reference}")
+            
+            time.sleep(5)
+
+            while True:
+                r = requests.post(
+                    f"{TNR_BMTB_SERVER}/claim", json={"reference": reference, "device_id": USER_APP_ID})
+                j = r.json()
+                if j["status"] == "ok":
+                    license = j["license"]
+                    self.save_encrypted_locally(license)
+                    break
+                # wait a few seconds then retry
+                time.sleep(5)
+
+        except Exception as e:
+            logging.error(f"Error during payment processing: {e}")
+            tkmsg.showerror(
+                "Error", "Failed to initiate payment. ")
 
         # if freemium_reg code is valid, then unlock that feature
         # else, keep it locked.
 
         # meaning that we have to check in the beginning if the app
         # is registered so as to unlock before starting app.
+
+    def save_encrypted_locally(self, license):
+        with open(LICENSE_KEY_FILE, "w") as f:
+            f.write(self.cipher.encrypt(license))
+        self.freemium_locked = False
+        self.add_button.configure(text="Add Note", command=self.add_note)
 
     def validate_freemium_reg_code(self):
         pass

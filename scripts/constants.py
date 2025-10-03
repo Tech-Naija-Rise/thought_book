@@ -61,6 +61,7 @@ def hideables(hide=True):
 
 
 def write_file(file, contents={}):
+    """Must be in json"""
     hideables(hide=False)
     with open(file, "w") as w:
         json.dump(contents, w)
@@ -68,6 +69,7 @@ def write_file(file, contents={}):
 
 
 def read_file(file):
+    """Must be in json"""
     hideables(hide=False)
     with open(file, "r") as r:
         contents = dict(json.load(r))
@@ -100,9 +102,13 @@ HIDDEN_FOLDER.mkdir(parents=True, exist_ok=True)
 
 
 # --- Files ---
+# Hidden files
 METRICS_FILE = HIDDEN_FOLDER / "metrics.json"  # for freemium model
-
+LICENSE_KEY_FILE = HIDDEN_FOLDER / "license.key"
 ID_FILE = HIDDEN_FOLDER / "config.json"
+EMAIL_ID_FILE = HIDDEN_FOLDER / "email_config.json"
+
+
 NOTES_DB = NOTES_FOLDER / "BMTbnotes.db"
 RECOVERY_FILE = NOTES_FOLDER / "recovery.key"
 PASS_FILE = NOTES_FOLDER / "pass.pass"
@@ -148,6 +154,7 @@ logging.basicConfig(
 BMA_DOWNLOAD_LINK = "https://github.com/Mahmudumar/BMA/releases/latest"
 BMTB_DOWNLOAD_LINK = "https://github.com/Mahmudumar/thought_book/releases"
 BMTB_FEEDBACK_SERVER = "https://feedback-server-tnr.onrender.com/feedback"
+TNR_BMTB_SERVER = "https://feedback-server-tnr.onrender.com"
 
 
 if __name__ == "__main__":
