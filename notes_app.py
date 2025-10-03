@@ -142,7 +142,7 @@ class NotesApp(ctk.CTk):
 
             if self.get_note_count() >= count:
                 # remind once only TODO: remove 'not'
-                if not int(urc) < int(mur):
+                if int(urc) < int(mur):
                     ans = tkmsg.askyesnocancel("Free version limit reached",
                                                "Your free note limit has been reached\n"
                                                "Would you like to upgrade now "
@@ -191,9 +191,9 @@ class NotesApp(ctk.CTk):
 
     def __freemium_reg_flow(self):
         try:
-
+            
             resp = requests.post(f"{TNR_BMTB_SERVER}/payment",
-                                 json={"device_id": USER_APP_ID, "amount": 500,
+                                 json={"amount": 500,
                                        "email": self.user_email})
             # open resp.json()['data']['authorization_url'] in webview/browser
             reference = str(resp.json()["data"]["reference"])
