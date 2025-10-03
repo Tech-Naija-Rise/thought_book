@@ -33,6 +33,7 @@ import logging
 import datetime
 from tkinter import messagebox as tkmsg
 from tkinter.messagebox import askyesno
+import webbrowser
 
 
 import customtkinter as ctk
@@ -42,6 +43,7 @@ from scripts.constants import (
     PASS_FILE,
     APP_NAME,
     APP_ICON,
+    TNR_BMTB_SERVER,
 )
 from scripts.bma_express import ActivitiesAPI
 from scripts.utils import (
@@ -100,6 +102,77 @@ class NotesApp(ctk.CTk):
         self.focused = ctk.BooleanVar(self, False, "focused")
 
         self.start_ui()
+
+        self.freemium_locked = True
+        self.__freemium_note_count_feature(self.freemium_locked)
+
+    def __freemium_note_count_feature(self, locked=True):
+        """This is for the freemium When the app starts, 
+        we check for a file with a hashed number if 
+        the number of notes reaches that number, then 
+        we remind them and redirect to website to own 
+        the app. The button to add more notes will be 
+        disabled so as not to have more than 
+        note_count_limit In the first place, 
+        don't allow them to create more than 10 """
+        if locked:
+            info = METRICS_FILE_CONTENT
+            try:
+                count = int(info['note_count_limit'])
+                urc = int(info['upgrade_reminder_count'])
+                mur = int(info['max_upgrade_remind'])
+            except KeyError as e:
+                logging.error(f"Can't find keys: {e}")
+            if self.get_note_count() >= count:
+                # remind once only TODO: remove 'not'
+                if not int(urc) < int(mur):
+                    ans = tkmsg.askyesnocancel(
+                        "Free version limit reached",
+                        "Your free note limit has been reached\n"
+                        "Would you like to upgrade now "
+                        "to have access "
+                        "to all features?")
+                    info['upgrade_reminder_count'] += 1
+                    logging.info(info)
+                    write_file(METRICS_FILE, info)
+                    if ans is not None:
+                        if ans:
+                            # go to the webpage
+                            self.freemium_reg_flow()
+                        else:
+                            # lock the other notes created
+                            pass
+                        self.add_button.configure(state="disabled")
+
+                    elif self.get_note_count() < count:
+                        self.add_button.configure(state="normal")
+                else:
+                    self.add_button.configure(state="normal")
+
+            def freemium_reg_flow(self):
+                # freemium_reg_code = askstring( # "App Payment Code", # "When your payment is confirmed, " # "you will be given a code.\n" # "Copy the 10 digit " # "code and paste here.", placeholder="Enter Code" # )
+                try:
+                    resp = requests.post(
+                        f"{TNR_BMTB_SERVER}/payment", json={"amount": 5000, "email": ""})
+                    # open resp.json()['data']['authorization_url'] in webview/browser
+                    reference = resp.json()["data"]["reference"]
+                    logging.info(f"Payment initiated, reference: {reference}")
+                    tkmsg.showinfo(
+                        "Payment", f"Please complete your payment at {resp.json()['data']['authorization_url']}")
+                    # when ok, open new browser tab and go to url
+                    webbrowser.open_new_tab(
+                        resp.json()['data']['authorization_url'])
+                except Exception as e:
+                    logging.error(f"Error during payment processing: {e}")
+                    # meaning that we have to check in the beginning if the app
+                    # # is registered so as to unlock before starting app.
+                    #
+
+    def save_encrypted_locally(self, license): pass
+    def validate_freemium_reg_code(self): pass
+
+    def get_note_count(self):
+        return len(self.load_notes())
 
     def start_ui(self):
         if not self.locked:

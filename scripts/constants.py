@@ -71,7 +71,7 @@ logging.basicConfig(
 BMA_DOWNLOAD_LINK = "https://github.com/Mahmudumar/BMA/releases/latest"
 BMTB_DOWNLOAD_LINK = "https://github.com/Mahmudumar/thought_book/releases"
 BMTB_FEEDBACK_SERVER = "https://feedback-server-tnr.onrender.com/feedback"
-
+TNR_BMTB_SERVER = "https://feedback-server-tnr.onrender.com"
 if __name__ == "__main__":
     print(f"Main folder: {MAIN_FOLDER}")
     print(f"Data folder: {DATA_FOLDER}")
