@@ -169,7 +169,7 @@ def build_exe(script_path="notes_app.py", d_i=deploy_info):
     # and any other files that the app might need
 
     cmd = f'pyinstaller --noconfirm -i "{APP_ICON}"'
-    cmd += f' --add-data "{APP_ICON};imgs" -n "{APP_NAME}"'
+    cmd += f' --add-data "{APP_ICON};imgs" --add-data "public_key.pem;data" -n "{APP_NAME}"'
     cmd += f' --noconsole --onefile "{script_path}"'
     print(cmd)
     os.system(cmd)

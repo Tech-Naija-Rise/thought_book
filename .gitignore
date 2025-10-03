@@ -18,3 +18,4 @@ ac.py
 *.exe
 *.info
 *.pem
+*.key
