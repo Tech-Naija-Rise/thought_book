@@ -93,23 +93,6 @@ def create_table() -> None:
         )
         conn.commit()
 
-
-def create_fb_tb():
-    with get_connection() as conn:
-        c = conn.cursor()
-        c.execute(
-            """
-            CREATE TABLE IF NOT EXISTS feedback (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            email TEXT NOT NULL,
-            body TEXT NOT NULL,
-            );
-            """
-        )
-        conn.commit()
-
-
 def add_note(title: str, content: str) -> int:
     """Insert a new note. Returns the new note id."""
     with get_connection() as conn:
@@ -120,7 +103,6 @@ def add_note(title: str, content: str) -> int:
         nid = c.lastrowid
         conn.commit()
     return nid  # type: ignore
-
 
 def update_note(note_id: int, title: str, content: str) -> None:
     """Update an existing note.
@@ -209,12 +191,10 @@ def migrate_from_json(json_path: str = "notes.json") -> int:
 
     return count
 
-
 def set_recovery_key(code: str):
     hashed = hashlib.sha256(code.encode('utf-8')).hexdigest()
     with open(RECOVERY_FILE, 'w') as f:
         f.write(hashed)
-
 
 def verify_recovery_key(code: str) -> bool:
     if not os.path.exists(RECOVERY_FILE):
@@ -223,86 +203,6 @@ def verify_recovery_key(code: str) -> bool:
     with open(RECOVERY_FILE, 'r') as f:
         stored_hash = f.readline().strip()
     return entered_hash == stored_hash
-
-
-class SimpleCipher:
-    """
-    find a way to encrypt even the key itself
-    so that a person cannot use a program to hack and decode
-    the notes
-    """
-
-    def __init__(self, key=3) -> None:
-        self.alphabet = string.ascii_lowercase
-        self.key = key
-
-    def encrypt(self, text: str):
-        encoded = ""
-        for ch in text:
-            c = ord(ch) + self.key % 26
-            encoded += chr(c)
-        return encoded
-
-    def decrypt(self, text):
-        decoded = ""
-        for ch in text:
-            c = ord(ch) - self.key % 26
-            decoded += chr(c)
-        return decoded
-
-    def pass_hash(self, text: str) -> str:
-        """
-        Generate a secure SHA-256 hash of the password.
-        Returns the hex digest string (64 characters).
-        """
-        return hashlib.sha256(text.encode("utf-8")).hexdigest()
-
-
-class SimpleSubstitution:
-    def __init__(self):
-        # Only a–i mapped
-        self.encode_map = {
-            "a": "01", "b": "02", "c": "03",
-            "d": "04", "e": "05", "f": "06",
-            "g": "07", "h": "08", "i": "09",
-
-            "A": "11", "B": "12", "C": "13",
-            "D": "14", "E": "15", "F": "16",
-            "G": "17", "H": "18", "I": "19",
-
-        }
-        self.encode_map = {
-            ch: f"{num}".zfill(2) for num, ch in enumerate(string.printable)}
-
-        self.decode_map = {v: k for k, v in self.encode_map.items()}
-
-    def encrypt(self, text: str) -> str:
-        """Replace a–i with digits 1–9."""
-        encoded = ""
-        for char in text:
-            encoded += self.encode_map.get(char, char)
-        return encoded
-
-    def decrypt(self, text: str) -> str:
-        decoded = ""
-        i = 0
-        while i < len(text):
-            pair = text[i:i+2]
-            if pair in self.decode_map:
-                decoded += self.decode_map[pair]
-                i += 2
-            else:
-                decoded += text[i]
-                i += 1
-        return decoded
-
-    def pass_hash(self, text: str) -> str:
-        """
-        Generate a secure SHA-256 hash of the password.
-        Returns the hex digest string (64 characters).
-        """
-        return hashlib.sha256(text.encode("utf-8")).hexdigest()
-
 
 def askstring(title="Input", prompt="Enter value:", show=None, placeholder="", width=300, height=150):
     """Universal CTk askstring dialog. Returns str or None."""
@@ -361,34 +261,9 @@ def askstring(title="Input", prompt="Enter value:", show=None, placeholder="", w
 
     return result["value"]
 
-
 def count_words_in_string(text):
     words = re.findall(r'\b\w+\b', text)
     return len(words)
-
-
-def all_notes():
-    """
-    Return the total number of WORDS and the notes in the database
-    from beginning to end.
-
-    This function is for 
-    the experimental AI to use 
-    to know when to finetune its model
-
-    WARNING: This removes encryption
-
-    """
-    all_notes = ""
-    decode = SimpleCipher().decrypt
-    # encode = SimpleCipher().encrypt
-    for note in get_notes():
-        all_notes += f"\n[{note['title']}]\n"
-        all_notes += decode(note['content'])
-    total = count_words_in_string(all_notes)
-    del decode
-    return total, all_notes
-
 
 def has_internet():
     try:

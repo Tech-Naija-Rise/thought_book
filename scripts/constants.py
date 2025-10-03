@@ -13,6 +13,18 @@ __all__ = [
     "APP_VERSION", "APP_ICON", "APP_PHOTO"
 ]
 
+# --- License Management ---
+PUBLIC_KEY = """-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnBOjHCBqpuw6de8jvHwv
+T9VEdHmVOAxIQMIYjRtJnrhYSwFeN8YpWODDk6mPqOJMsGDApN/oJG4fqNW9NvTr
+p3dz0SoU/1tZFMqX7WOqo0EaUiViOzCw3MFe83nnP4OW418+TLcivXlUFvUefxJi
+VZ+liHmTPqWIJe1rW596h4yRtzgiTZKFLsvsg1Te6ngSHdwCTSSdcqR6QhQQkYzP
+tzsNrK+dDT/IpbPOQ4yniByxqtHFhgXRrvoGZLUyxRetKsTvcfImirYL9rTS8ga3
+o2blCB3/0uiqcqq1KaOFwmnEhzh+zGBEecgm23ot3AQlq9VMkSRQBmPLVTjJW3pH
+lQIDAQAB
+-----END PUBLIC KEY-----
+"""
+
 # --- App Info ---
 APP_NAME = "Thought Book"
 APP_VERSION = "1.0.0"
