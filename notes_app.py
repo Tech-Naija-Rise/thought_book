@@ -198,7 +198,7 @@ class NotesApp(ctk.CTk):
             # open resp.json()['data']['authorization_url'] in webview/browser
             reference = str(resp.json()["data"]["reference"])
             logging.info(f"Payment initiated, reference: {reference}")
-            
+            webbrowser.open_new_tab(resp.json()['data']['authorization_url'])
             time.sleep(5)
 
             while True:
