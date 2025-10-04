@@ -60,7 +60,9 @@ class LicenseManager:
 
             write_json_file(self.license_file, self.format_license(
                 license_data, license_key))
+            logging.info("Saved license to file.")
 
+            self.is_premium=True
             return True
         else:
             self.is_premium = False
@@ -75,7 +77,7 @@ class LicenseManager:
                 self.public_key.encode())
 
             # Encode and hash the license data
-            license_bytes = json.dumps(license_data, sort_keys=True).encode()
+            license_bytes = license_data.encode()
             signature = base64.b64decode(license_key)
 
             public_key.verify(  # type: ignore
@@ -84,14 +86,19 @@ class LicenseManager:
                 padding.PKCS1v15(),  # type: ignore
                 hashes.SHA256()  # type: ignore
             )
+            
             tkmsg.showinfo(
                 "Success", "License activated successfully! "
                 "You are now a premium user.")
+            
+            logging.info("License verified successfully.")
+            self.is_premium = True
             return True
         except Exception as e:
             logging.error(f"License verification failed: {e}")
             tkmsg.showerror("License Error",
                             "Invalid license. Please try again.")
+            self.is_premium = False
             return False
 
     # Formatting
@@ -176,7 +183,6 @@ class LicenseManager:
 
         self.license_window.wait_window()
 
-
     def __ask_email(self):
         """Prompt user for email if not stored"""
         if not os.path.exists(EMAIL_ID_FILE):
@@ -192,7 +198,7 @@ class LicenseManager:
             resp = requests.post(
                 f"{TNR_BMTB_SERVER}/payment",
                 json={"amount": 5000, "email": self.user_email})
-            
+
             reference = str(resp.json()["data"]["reference"])
 
             logging.info(f"Payment initiated, reference: {reference}")
@@ -213,7 +219,6 @@ class LicenseManager:
         self._update_status("Opening payment link, please wait...")
         threading.Thread(target=self.__initiate_payment, daemon=True).start()
 
-
     def __submit_license(self, data_entry, key_entry):
         """Handle license submission"""
         self._update_status("Verifying license, please wait...")
@@ -226,7 +231,8 @@ class LicenseManager:
                 "Missing Data", "Both License Data and License Key are required.")
             return
 
-        self.verify_signature(license_data, license_key)
+        # self.verify_signature(license_data, license_key)
+        self.activate_license(license_data, license_key)
         self.license_window.destroy()
 
 
