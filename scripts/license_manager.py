@@ -1,6 +1,7 @@
 # license_manager.py
 
 # For license management
+import json
 import threading
 import webbrowser
 import customtkinter as ctk
@@ -12,83 +13,139 @@ import base64
 
 import requests
 
-from scripts.constants import (EMAIL_ID_FILE, LICENSE_KEY_FILE,
-                               TNR_BMTB_SERVER, read_file, logging,
-                               APP_ICON, APP_NAME, write_file, PUBLIC_KEY)
-from scripts.utils import askstring
+from scripts.constants import (EMAIL_ID_FILE, LICENSE_FILE,
+                               TNR_BMTB_SERVER,  logging,
+                               APP_ICON, APP_NAME, read_json_file, read_txt_file,
+                               PUBLIC_KEY, write_json_file, write_txt_file)
+from scripts.utils import askstring, center_window
 
 
 class LicenseManager:
     def __init__(self, master) -> None:
         """Managing all license related things. 
         This classed is called in the Notes app.
-
-        To avoid circular imports, we pass the main
-        notes app class here in the form of
-
-        LicenseManager(`self`) where `self` is NotesApp class
         """
         self.master = master
-
         self.cipher = self.master.cipher
+        self.license_file = LICENSE_FILE
+        self.public_key = PUBLIC_KEY
+        self.is_premium = False
+        self.license_data = None
+        self.license_key = None
 
-    def check_and_enforce_status(self, flag):
-        """Check license status, set the app's 'is_premium' flag, and update UI."""
-        if not os.path.exists(LICENSE_KEY_FILE):
-            # No license file, enforce freemium mode and prompt
-            self.master.enforce_freemium_ui()
-            self.__show_license_window()
-            return
+        self.load_and_validate_license()
+
+    def load_and_validate_license(self):
+        if not os.path.exists(self.license_file):
+            self.is_premium = False
+            return False
+
+        data = read_json_file(self.license_file)
+        self.license_data, self.license_key = self.parse_license(data)
+
+        if self.verify_signature(self.license_data, self.license_key):
+            self.is_premium = True
+            return True
+        else:
+            self.is_premium = False
+            os.remove(self.license_file)  # 🚨 remove tampered/invalid license
+            return False
+
+    def activate_license(self, license_data, license_key):
+        # Called when user enters key
+        if self.verify_signature(license_data, license_key):
+            self.license_data = license_data
+            self.license_key = license_key
+            self.is_premium = True
+
+            write_json_file(self.license_file, self.format_license(
+                license_data, license_key))
+
+            return True
+        else:
+            self.is_premium = False
+            return False
+
+    def is_premium_user(self):
+        return self.is_premium
+
+    def verify_signature(self, license_data, license_key):
         try:
-            encrypted_license = read_file(LICENSE_KEY_FILE)
-            # NOTE: For security, full RSA validation should
-            # ideally be here too.
-            self.cipher.decrypt(encrypted_license)
+            public_key = serialization.load_pem_public_key(
+                self.public_key.encode())
 
-            # If successful, unlock features
-            flag = True # We are now premium
-            return flag
-        except Exception as e:
-            logging.error(f"License check failed: {e}")
-            tkmsg.showerror(
-                "Error", "Local license file corrupted."
-                " Please re-enter your license."
+            # Encode and hash the license data
+            license_bytes = json.dumps(license_data, sort_keys=True).encode()
+            signature = base64.b64decode(license_key)
+
+            public_key.verify(  # type: ignore
+                signature,
+                license_bytes,
+                padding.PKCS1v15(),  # type: ignore
+                hashes.SHA256()  # type: ignore
             )
-            # If corrupted, fall back to freemium and prompt for re-entry
-            flag = False # Not premium
-            self.__show_license_window()
-            return flag
+            tkmsg.showinfo(
+                "Success", "License activated successfully! "
+                "You are now a premium user.")
+            return True
+        except Exception as e:
+            logging.error(f"License verification failed: {e}")
+            tkmsg.showerror("License Error",
+                            "Invalid license. Please try again.")
+            return False
 
-    def __show_license_window(self):
+    # Formatting
+    def format_license(self, license_data, license_key):
+        return {
+            "license_data": license_data,
+            "license_key": license_key
+        }
+
+    def parse_license(self, data):
+        """TODO: decrypt data"""
+        license_dict = data if isinstance(data, dict) else json.loads(data)
+        return license_dict["license_data"], license_dict["license_key"]
+
+    def _show_license_window(self, master):
         """Display modal license entry window"""
-        self.license_window = ctk.CTkToplevel(self.master)
+        self.license_window = ctk.CTkToplevel(master)
         self.license_window.title(f"Activate {APP_NAME}")
-        self.license_window.geometry("500x400")
-        self.license_window.iconbitmap(APP_ICON)
+        self.license_window.geometry("500x510")
         try:
             self.license_window.grab_set()
         except Exception:
             pass
         self.license_window.resizable(False, True)
+        self.license_window.iconbitmap(APP_ICON)
+        center_window(self.license_window, offsety=-150)
 
         instructions = ctk.CTkLabel(
             self.license_window,
-            text=(f"Welcome to {APP_NAME}!\n\nPlease paste your license information below."
-                  "\n1. License Data\n2. License Key\n\nIf you haven't "
-                  "purchased a license yet, click"),
+            text=(
+                f"Welcome to {APP_NAME}!\n\n"
+                "You are currently using the free version.\n\n"
+                "Unlock the full version to enjoy:\n"
+                "• Premium features\n"
+                "• A smoother, distraction-free experience\n\n"
+                "To activate, please paste:\n"
+                "1. Your License Data\n"
+                "2. Your License Key\n\n"
+                "If you don’t have a license yet, click below to purchase one."
+            ),
             justify="left",
             wraplength=480
         )
+
         instructions.pack(pady=(10, 0), padx=10, anchor="w")
 
         link_label = ctk.CTkLabel(
-            self.license_window, text="here.",
-              text_color="#4a90e2",
-              cursor="hand2", justify="left"
+            self.license_window, text="purchase license",
+            text_color="#5f9de4",
+            cursor="hand2", justify="left"
         )
         link_label.pack(pady=(0, 10), padx=10, anchor="w")
         link_label.bind("<Button-1>", lambda e: threading.Thread(
-            target=self.__freemium_reg_flow, daemon=True).start())
+            target=self.initiate_payment, daemon=True).start())
 
         license_data_label = ctk.CTkLabel(
             self.license_window, text="License Data:")
@@ -109,19 +166,58 @@ class LicenseManager:
                 license_data_entry, license_key_entry)
         )
         submit_btn.pack(pady=10)
-        # something to tell the user that it is 
+        # something to tell the user that it is
         # loading just as we did in feedback
         # system.
         self.status = ctk.CTkLabel(
-            self.license_window,text="Loading...")
+            self.license_window, text="",
+            text_color="#f5ca3f")
         self.status.pack(anchor="w", padx=20)
 
         self.license_window.wait_window()
 
+
+    def __ask_email(self):
+        """Prompt user for email if not stored"""
+        if not os.path.exists(EMAIL_ID_FILE):
+            self.user_email = askstring(
+                "Email Required", "Enter your email (required for payment receipt):")
+            write_json_file(EMAIL_ID_FILE, {"user_email": self.user_email})
+        else:
+            self.user_email = read_json_file(EMAIL_ID_FILE)["user_email"]
+
+    def __initiate_payment(self):
+        """Perform server payment initiation"""
+        try:
+            resp = requests.post(
+                f"{TNR_BMTB_SERVER}/payment",
+                json={"amount": 5000, "email": self.user_email})
+            
+            reference = str(resp.json()["data"]["reference"])
+
+            logging.info(f"Payment initiated, reference: {reference}")
+            webbrowser.open_new_tab(resp.json()['data']['authorization_url'])
+        except Exception as e:
+            logging.error(f"Error during payment processing: {e}")
+            tkmsg.showerror("Error occured",
+                            f"Failed to initiate payment."
+                            f"\nMight be a connection problem. \n")
+
+    def _update_status(self, msg):
+        self.status.configure(text=msg)
+        self.license_window.update_idletasks()
+
+    def initiate_payment(self):
+        """Start freemium registration/payment flow"""
+        self.__ask_email()
+        self._update_status("Opening payment link, please wait...")
+        threading.Thread(target=self.__initiate_payment, daemon=True).start()
+
+
     def __submit_license(self, data_entry, key_entry):
         """Handle license submission"""
-        self.status.config(text="Verifying license, please wait...")
-        self.license_window.update_idletasks()
+        self._update_status("Verifying license, please wait...")
+
         license_data = data_entry.get("1.0", "end-1c").strip()
         license_key = key_entry.get("1.0", "end-1c").strip()
 
@@ -130,59 +226,27 @@ class LicenseManager:
                 "Missing Data", "Both License Data and License Key are required.")
             return
 
-        self.validate_license(PUBLIC_KEY, license_data, license_key)
+        self.verify_signature(license_data, license_key)
         self.license_window.destroy()
 
-    def validate_license(self, public_key, license_data, license_key):
-        """Validate license using RSA public key"""
-        pubk = serialization.load_pem_public_key(public_key.encode())
-        try:
-            signature = base64.b64decode(license_key)
-            pubk.verify(signature, license_data.encode(),  # type: ignore
-                        padding.PKCS1v15(), hashes.SHA256())  # type: ignore
 
-            tkmsg.showinfo("Success", "License verified successfully!")
+"""
 
-            self.save_encrypted_locally(license_data)
-            # Centralized unlock after successful activation
-        except Exception as e:
-            tkmsg.showerror("Invalid License",
-                            "License key does not match data!")
-            logging.error(f"License verification failed: {e}")
+[x] App begins.
 
-    def __ask_email(self):
-        """Prompt user for email if not stored"""
-        if not os.path.exists(EMAIL_ID_FILE):
-            self.user_email = askstring(
-                "Email Required", "Enter your email (required for payment receipt):")
-            write_file(EMAIL_ID_FILE, {"user_email": self.user_email})
-        else:
-            self.user_email = read_file(EMAIL_ID_FILE)["user_email"]
+[] Look for license.json in your app’s data directory.
 
-    def __freemium_reg_flow(self):
-        """Perform server payment initiation"""
-        try:
-            resp = requests.post(
-                f"{TNR_BMTB_SERVER}/payment",
-                json={"amount": 500, "email": self.user_email})
-            reference = str(resp.json()["data"]["reference"])
-            logging.info(f"Payment initiated, reference: {reference}")
-            webbrowser.open_new_tab(resp.json()['data']['authorization_url'])
+If file not found → set is_premium = False.
 
-        except Exception as e:
-            logging.error(f"Error during payment processing: {e}")
-            tkmsg.showerror("Error occured",
-                            f"Failed to initiate payment."
-                            f"\nMight be a connection problem. \n{e}")
+If file found → open it and parse JSON.
 
-    def freemium_reg_flow(self):
-        """Start freemium registration/payment flow"""
-        self.__ask_email()
-        self.__show_license_window()
-        threading.Thread(target=self.__freemium_reg_flow, daemon=True).start()
+Extract license_data and license_key.
 
-    def save_encrypted_locally(self, license):
-        """Encrypt and save license locally"""
-        with open(LICENSE_KEY_FILE, "w") as f:
-            f.write(self.cipher.encrypt(license))
-        self.master.is_premium = True
+Run verify_signature(license_data, license_key) with your embedded public key.
+
+If valid → set is_premium = True.
+
+If invalid → delete license.json, set is_premium = False.
+
+
+"""

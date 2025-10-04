@@ -204,10 +204,9 @@ def save_settings(settings):
     with open(SETTINGS_FILE, "w") as f:
         json.dump(settings, f, indent=2)
 
-
-class SettingsWindow(tk.Toplevel):
+import customtkinter as ctk
+class SettingsWindow(ctk.CTkToplevel):
     """Settings GUI window styled like NCH preferences with shared styles."""
-
     def __init__(self, parent, cipher):
         super().__init__(parent)
         self.title("Settings")

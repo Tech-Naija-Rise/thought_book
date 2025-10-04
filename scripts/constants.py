@@ -1,5 +1,7 @@
 # constants.py
-import os, json, uuid
+import os
+import json
+import uuid
 import logging
 from pathlib import Path
 import sys
@@ -23,6 +25,7 @@ tzsNrK+dDT/IpbPOQ4yniByxqtHFhgXRrvoGZLUyxRetKsTvcfImirYL9rTS8ga3
 o2blCB3/0uiqcqq1KaOFwmnEhzh+zGBEecgm23ot3AQlq9VMkSRQBmPLVTjJW3pH
 lQIDAQAB
 -----END PUBLIC KEY-----
+
 """
 
 # --- App Info ---
@@ -55,38 +58,12 @@ def get_device_id(config_file):
                     return data["device_id"]
         except Exception:
             pass  # if file corrupted, regenerate
-    
+
     # Generate new UUID and save it
     device_id = str(uuid.uuid4())
     with open(config_file, "w") as f:
         json.dump({"device_id": device_id}, f)
     return device_id
-
-
-def hideables(hide=True):
-    if not hide:
-        os.system(f'attrib -H "{HIDDEN_FOLDER}"')  # Hide folder
-        os.system(f'attrib -H "{METRICS_FILE}"')  # Hide metrics.json
-    else:
-        os.system(f'attrib +H "{HIDDEN_FOLDER}"')  # Hide folder
-        os.system(f'attrib +H "{METRICS_FILE}"')  # Hide metrics.json
-
-
-def write_file(file, contents={}):
-    """Must be in json"""
-    hideables(hide=False)
-    with open(file, "w") as w:
-        json.dump(contents, w)
-    hideables(hide=True)
-
-
-def read_file(file):
-    """Must be in json"""
-    hideables(hide=False)
-    with open(file, "r") as r:
-        contents = dict(json.load(r))
-    hideables(hide=True)
-    return contents
 
 
 # --- Main Folders ---
@@ -116,7 +93,7 @@ HIDDEN_FOLDER.mkdir(parents=True, exist_ok=True)
 # --- Files ---
 # Hidden files
 METRICS_FILE = HIDDEN_FOLDER / "metrics.json"  # for freemium model
-LICENSE_KEY_FILE = HIDDEN_FOLDER / "license.key"
+LICENSE_FILE = HIDDEN_FOLDER / "license.json"
 ID_FILE = HIDDEN_FOLDER / "config.json"
 EMAIL_ID_FILE = HIDDEN_FOLDER / "email_config.json"
 
@@ -127,10 +104,6 @@ PASS_FILE = NOTES_FOLDER / "pass.pass"
 LOGS_FILE = NOTES_FOLDER / "app.log"
 FB_PATH = NOTES_FOLDER / "feedbacks.json"
 SETTINGS_FILE = NOTES_FOLDER / "settings.json"
-
-
-
-
 
 
 # --- Freemium specification files functionality ---
@@ -144,6 +117,47 @@ NOTE_COUNT_LIMIT_FALLBACK = 10
 MAX_UPGRADE_REMIND = 1
 UPGRADE_REMINDER_COUNT = 0
 
+
+def hideables(hide=True, file=METRICS_FILE):
+    if not hide:
+        os.system(f'attrib -H "{HIDDEN_FOLDER}"')  # Hide folder
+        os.system(f'attrib -H "{file}"')  # Hide metrics.json
+    else:
+        os.system(f'attrib +H "{HIDDEN_FOLDER}"')  # Hide folder
+        os.system(f'attrib +H "{file}"')  # Hide metrics.json
+
+
+def write_json_file(file, contents={}):
+    """Must be in json"""
+    hideables(hide=False)
+    with open(file, "w") as w:
+        json.dump(contents, w)
+    hideables(hide=True)
+
+
+def read_json_file(file):
+    """Must be in json"""
+    hideables(hide=False)
+    with open(file, "r") as r:
+        contents = dict(json.load(r))
+    hideables(hide=True)
+    return contents
+
+
+def read_txt_file(file):
+    """Must be string"""
+    with open(file, "r") as r:
+        contents = r.read()
+    return contents
+
+
+def write_txt_file(file, contents=""):
+    """Must be string"""
+    with open(file, "r") as w:
+        w.write(contents)
+    return
+
+
 METRICS_FILE_CONTENT = {
     "note_count_limit": NOTE_COUNT_LIMIT_FALLBACK,
     "max_upgrade_remind": MAX_UPGRADE_REMIND,
@@ -151,9 +165,9 @@ METRICS_FILE_CONTENT = {
 
 if not os.path.exists(METRICS_FILE):
     # Put defaults since it is not complete
-    write_file(METRICS_FILE, METRICS_FILE_CONTENT)
+    write_json_file(METRICS_FILE, METRICS_FILE_CONTENT)
 else:
-    METRICS_FILE_CONTENT = read_file(METRICS_FILE)
+    METRICS_FILE_CONTENT = read_json_file(METRICS_FILE)
 
 # --- Logging ---
 logging.basicConfig(
