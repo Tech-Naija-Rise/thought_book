@@ -52,26 +52,30 @@ class LicenseManager:
             return False
 
     def activate_license(self, license_data, license_key):
-        # Called when user enters key
+        """Called when user enters key only"""
         if self.verify_signature(license_data, license_key):
             self.license_data = license_data
             self.license_key = license_key
             self.is_premium = True
-
             write_json_file(self.license_file, self.format_license(
                 license_data, license_key))
             logging.info("Saved license to file.")
-
-            self.is_premium=True
+            tkmsg.showinfo(
+                "Success", "License activated successfully! "
+                "You are now a premium user.")
             return True
         else:
             self.is_premium = False
+            tkmsg.showerror("License Error",
+                            "Invalid license. Please try again.")
             return False
 
     def is_premium_user(self):
         return self.is_premium
 
     def verify_signature(self, license_data, license_key):
+        """This is a silent function 
+        as opposed to  `activate_license(...)`"""
         try:
             public_key = serialization.load_pem_public_key(
                 self.public_key.encode())
@@ -86,18 +90,11 @@ class LicenseManager:
                 padding.PKCS1v15(),  # type: ignore
                 hashes.SHA256()  # type: ignore
             )
-            
-            tkmsg.showinfo(
-                "Success", "License activated successfully! "
-                "You are now a premium user.")
-            
             logging.info("License verified successfully.")
             self.is_premium = True
             return True
         except Exception as e:
             logging.error(f"License verification failed: {e}")
-            tkmsg.showerror("License Error",
-                            "Invalid license. Please try again.")
             self.is_premium = False
             return False
 
