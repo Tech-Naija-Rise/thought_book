@@ -32,29 +32,22 @@ class LicenseManager:
 
         self.cipher = self.master.cipher
 
-        self.unlocked_feature_id = ""
-
-    def unlock_feature(self, feature_id, associated_button):
-        if "unlimited_notes" in feature_id:
-            associated_button.configure(
-                text="Add Note", command=self.master.add_note)
-
-    def check_and_enforce_status(self):
+    def check_and_enforce_status(self, flag):
         """Check license status, set the app's 'is_premium' flag, and update UI."""
         if not os.path.exists(LICENSE_KEY_FILE):
             # No license file, enforce freemium mode and prompt
             self.master.enforce_freemium_ui()
             self.__show_license_window()
             return
-
         try:
             encrypted_license = read_file(LICENSE_KEY_FILE)
             # NOTE: For security, full RSA validation should
             # ideally be here too.
             self.cipher.decrypt(encrypted_license)
 
-            # If successful, unlock features and set premium flag
-            self.master.unlock_feature_checks("unlimited_notes")
+            # If successful, unlock features
+            flag = True # We are now premium
+            return flag
         except Exception as e:
             logging.error(f"License check failed: {e}")
             tkmsg.showerror(
@@ -62,8 +55,9 @@ class LicenseManager:
                 " Please re-enter your license."
             )
             # If corrupted, fall back to freemium and prompt for re-entry
-            self.master.enforce_freemium_ui()
+            flag = False # Not premium
             self.__show_license_window()
+            return flag
 
     def __show_license_window(self):
         """Display modal license entry window"""
