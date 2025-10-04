@@ -14,7 +14,7 @@ import requests
 
 from scripts.constants import (EMAIL_ID_FILE, LICENSE_KEY_FILE,
                                TNR_BMTB_SERVER, read_file, logging,
-                               APP_ICON, APP_NAME, write_file)
+                               APP_ICON, APP_NAME, write_file, PUBLIC_KEY)
 from scripts.utils import askstring
 
 
@@ -38,46 +38,43 @@ class LicenseManager:
         if "unlimited_notes" in feature_id:
             associated_button.configure(
                 text="Add Note", command=self.master.add_note)
-            
-    def check_license(self):
-        """Return True if a valid license exists locally."""
+
+    def check_and_enforce_status(self):
+        """Check license status, set the app's 'is_premium' flag, and update UI."""
         if not os.path.exists(LICENSE_KEY_FILE):
-            return False
+            # No license file, enforce freemium mode and prompt
+            self.master.enforce_freemium_ui()
+            self.__show_license_window()
+            return
+
         try:
             encrypted_license = read_file(LICENSE_KEY_FILE)
-            license_data = self.cipher.decrypt(encrypted_license)
-            print(license_data)
-            # Optional: validate license_data format
-            return True
+            # NOTE: For security, full RSA validation should
+            # ideally be here too.
+            self.cipher.decrypt(encrypted_license)
+
+            # If successful, unlock features and set premium flag
+            self.master.unlock_feature_checks("unlimited_notes")
         except Exception as e:
             logging.error(f"License check failed: {e}")
-            return False
-
-    def ask_license(self):
-        """Prompt user for license or validate existing one"""
-        if not os.path.exists(LICENSE_KEY_FILE):
+            tkmsg.showerror(
+                "Error", "Local license file corrupted."
+                " Please re-enter your license."
+            )
+            # If corrupted, fall back to freemium and prompt for re-entry
+            self.master.enforce_freemium_ui()
             self.__show_license_window()
-        else:
-            try:
-                with open(LICENSE_KEY_FILE, "r") as f:
-                    encrypted_license = f.read()
-                self.cipher.decrypt(encrypted_license)
-
-                self.freemium_locked = False
-                self.master.add_button.configure(
-                    text="Add Note", command=self.master.add_note)
-            except Exception as e:
-                logging.error(f"Failed to read/validate license: {e}")
-                tkmsg.showerror(
-                    "Error", "Failed to validate license. Please re-enter.")
 
     def __show_license_window(self):
         """Display modal license entry window"""
-        self.license_window = ctk.CTkToplevel(self)
+        self.license_window = ctk.CTkToplevel(self.master)
         self.license_window.title(f"Activate {APP_NAME}")
         self.license_window.geometry("500x400")
         self.license_window.iconbitmap(APP_ICON)
-        self.license_window.grab_set()
+        try:
+            self.license_window.grab_set()
+        except Exception:
+            pass
         self.license_window.resizable(False, True)
 
         instructions = ctk.CTkLabel(
@@ -86,15 +83,18 @@ class LicenseManager:
                   "\n1. License Data\n2. License Key\n\nIf you haven't "
                   "purchased a license yet, click"),
             justify="left",
-            wraplength=460
+            wraplength=480
         )
         instructions.pack(pady=(10, 0), padx=10, anchor="w")
 
         link_label = ctk.CTkLabel(
-            self.license_window, text="here.", text_color="#4a90e2", cursor="hand2", justify="left"
+            self.license_window, text="here.",
+              text_color="#4a90e2",
+              cursor="hand2", justify="left"
         )
         link_label.pack(pady=(0, 10), padx=10, anchor="w")
-        link_label.bind("<Button-1>", lambda e: self.freemium_reg_flow())
+        link_label.bind("<Button-1>", lambda e: threading.Thread(
+            target=self.__freemium_reg_flow, daemon=True).start())
 
         license_data_label = ctk.CTkLabel(
             self.license_window, text="License Data:")
@@ -115,11 +115,19 @@ class LicenseManager:
                 license_data_entry, license_key_entry)
         )
         submit_btn.pack(pady=10)
+        # something to tell the user that it is 
+        # loading just as we did in feedback
+        # system.
+        self.status = ctk.CTkLabel(
+            self.license_window,text="Loading...")
+        self.status.pack(anchor="w", padx=20)
 
-        self.license_window.mainloop()
+        self.license_window.wait_window()
 
     def __submit_license(self, data_entry, key_entry):
         """Handle license submission"""
+        self.status.config(text="Verifying license, please wait...")
+        self.license_window.update_idletasks()
         license_data = data_entry.get("1.0", "end-1c").strip()
         license_key = key_entry.get("1.0", "end-1c").strip()
 
@@ -128,22 +136,21 @@ class LicenseManager:
                 "Missing Data", "Both License Data and License Key are required.")
             return
 
-        self.validate_license(license_data, license_key)
+        self.validate_license(PUBLIC_KEY, license_data, license_key)
         self.license_window.destroy()
 
-    def validate_license(self, license_data, license_key):
+    def validate_license(self, public_key, license_data, license_key):
         """Validate license using RSA public key"""
-        with open("public_key.pem", "rb") as f:
-            public_key = serialization.load_pem_public_key(f.read())
+        pubk = serialization.load_pem_public_key(public_key.encode())
         try:
             signature = base64.b64decode(license_key)
-            public_key.verify(signature, license_data.encode(),  # type: ignore
-                              padding.PKCS1v15(), hashes.SHA256())  # type: ignore
+            pubk.verify(signature, license_data.encode(),  # type: ignore
+                        padding.PKCS1v15(), hashes.SHA256())  # type: ignore
+
             tkmsg.showinfo("Success", "License verified successfully!")
+
             self.save_encrypted_locally(license_data)
             # Centralized unlock after successful activation
-            if hasattr(self.master, "unlock_feature_checks"):
-                self.master.unlock_feature_checks("unlimited_notes")
         except Exception as e:
             tkmsg.showerror("Invalid License",
                             "License key does not match data!")
@@ -177,12 +184,11 @@ class LicenseManager:
     def freemium_reg_flow(self):
         """Start freemium registration/payment flow"""
         self.__ask_email()
+        self.__show_license_window()
         threading.Thread(target=self.__freemium_reg_flow, daemon=True).start()
 
     def save_encrypted_locally(self, license):
         """Encrypt and save license locally"""
         with open(LICENSE_KEY_FILE, "w") as f:
             f.write(self.cipher.encrypt(license))
-
-        self.master.add_button.configure(
-            text="Add Note", command=self.master.add_note)
+        self.master.is_premium = True

@@ -217,8 +217,10 @@ def askstring(title="Input", prompt="Enter value:", show=None, placeholder="", w
     dialog.winfo_toplevel().geometry(f"{width}x{height}")
     dialog.wm_iconbitmap(APP_ICON)
     dialog.transient(root)   # Tie dialog to root (only on top of it)
-    dialog.grab_set()        # Keep it modal (block other app windows)
-
+    try:
+        dialog.grab_set()
+    except Exception:
+        pass
     # Prompt
     label = ctk.CTkLabel(dialog, text=prompt,wraplength=300)
     label.pack(pady=(15, 5))

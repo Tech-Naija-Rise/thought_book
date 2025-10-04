@@ -64,23 +64,13 @@ class NotesApp(ctk.CTk):
         self.current_note = ""
         self.autosave_after_id = None
         self.focused = ctk.BooleanVar(self, False, "focused")
+        self.is_premium = False  # Meaning things are limited
         self.start_ui()
 
         # License (must be below because we modify buttons)
         self.license_manager = LicenseManager(self)
-        if self.license_manager.check_license():
-            self.unlock_feature_checks(self.license_manager.unlocked_feature_id)
-        else:
-            # Prompt user to activate or enter license if not found/invalid
-            self.license_manager.ask_license()
 
     # --- License-based methods ---
-    def unlock_feature_checks(self, feature_id):
-        # Centralized place to unlock all premium features
-        if "unlimited_notes" in feature_id:
-            self.license_manager.unlock_feature(feature_id, self.add_button)
-        # Add more feature unlocks here as needed
-
 
     # --- UI-based methods ---
 
@@ -212,6 +202,21 @@ class NotesApp(ctk.CTk):
 
     def add_note(self):
         """Create a new note, save current, and enforce freemium limits."""
+        MAX_FREEMIUM_NOTES = 5
+
+        # --- Mandatory Security Check ---
+        if not self.is_premium and self.get_note_count() >= MAX_FREEMIUM_NOTES:
+            if tkmsg.askyesno(
+                f"{APP_NAME} - Trial Version",
+                f"This is a trial version of {APP_NAME}"
+                " designed so you can try it out before"
+                " deciding to buy."
+                " Would you like to proceed"
+                    " to buy the full version now?"):
+                self.license_manager.freemium_reg_flow()
+            return
+        # --------------------------------
+
         if self.current_index is not None:
             self.save_current_note(index_to_save=self.current_index)
 
