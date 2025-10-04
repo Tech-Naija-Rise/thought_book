@@ -2,6 +2,7 @@
 
 # For license management
 import json
+import re
 import threading
 import webbrowser
 import customtkinter as ctk
@@ -15,8 +16,8 @@ import requests
 
 from scripts.constants import (EMAIL_ID_FILE, LICENSE_FILE,
                                TNR_BMTB_SERVER,  logging,
-                               APP_ICON, APP_NAME, read_json_file, read_txt_file,
-                               PUBLIC_KEY, write_json_file, write_txt_file)
+                               APP_ICON, APP_NAME, read_json_file,
+                               PUBLIC_KEY, write_json_file)
 from scripts.utils import askstring, center_window
 
 
@@ -26,9 +27,11 @@ class LicenseManager:
         This classed is called in the Notes app.
         """
         self.master = master
+
         self.cipher = self.master.cipher
         self.license_file = LICENSE_FILE
         self.public_key = PUBLIC_KEY
+
         self.is_premium = False
         self.license_data = None
         self.license_key = None
@@ -110,6 +113,8 @@ class LicenseManager:
         license_dict = data if isinstance(data, dict) else json.loads(data)
         return license_dict["license_data"], license_dict["license_key"]
 
+    # --- Link and license acquisition ---
+
     def _show_license_window(self, master):
         """Display modal license entry window"""
         self.license_window = ctk.CTkToplevel(master)
@@ -181,13 +186,37 @@ class LicenseManager:
         self.license_window.wait_window()
 
     def __ask_email(self):
-        """Prompt user for email if not stored"""
+        """Prompt user for email if not stored
+
+        You must validate it because Paystack needs a 
+        valid email address
+        """
+        def validate_email(email):
+            return bool(re.match(
+                r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$",
+                email))
+
         if not os.path.exists(EMAIL_ID_FILE):
-            self.user_email = askstring(
-                "Email Required", "Enter your email (required for payment receipt):")
-            write_json_file(EMAIL_ID_FILE, {"user_email": self.user_email})
+            while True:
+                email = askstring("Email Required",
+                                  "Enter your email (required for payment):")
+                if not email:
+                    continue  # prompt again if empty
+                elif email == "exit":
+                    logging.warning("Payment process cancelled.")
+                    return
+
+                if validate_email(email):
+                    self.user_email = email
+                    write_json_file(
+                        EMAIL_ID_FILE, {"user_email": self.user_email})
+                    break
+                else:
+                    tkmsg.showerror("Invalid Email",
+                                    "Please enter a valid email address.")
         else:
             self.user_email = read_json_file(EMAIL_ID_FILE)["user_email"]
+            logging.error(f"Using stored email: {self.user_email}")
 
     def __initiate_payment(self):
         """Perform server payment initiation"""
@@ -200,21 +229,33 @@ class LicenseManager:
 
             logging.info(f"Payment initiated, reference: {reference}")
             webbrowser.open_new_tab(resp.json()['data']['authorization_url'])
+            self._update_status(
+                "Payment link opened in browser.", col="#3fbf3f")
+
         except Exception as e:
             logging.error(f"Error during payment processing: {e}")
             tkmsg.showerror("Error occured",
-                            f"Failed to initiate payment."
-                            f"\nMight be a connection problem. \n")
+                            "Failed to initiate payment."
+                            " Might be a connection problem."
+                            " Please try again later.")
 
-    def _update_status(self, msg):
-        self.status.configure(text=msg)
+    def _update_status(self, msg, col="#f5ca3f"):
+        self.status.configure(text=msg, text_color=col)
         self.license_window.update_idletasks()
 
     def initiate_payment(self):
         """Start freemium registration/payment flow"""
+        # Ask email first, and if it is cancelled or invalid,
+        # just cancel the payment process, don't
+        # run the thread
         self.__ask_email()
-        self._update_status("Opening payment link, please wait...")
-        threading.Thread(target=self.__initiate_payment, daemon=True).start()
+        if hasattr(self, 'user_email'):
+            self._update_status(
+                "Opening payment link. "
+                "It might take some seconds...")
+
+            threading.Thread(target=self.__initiate_payment,
+                             daemon=True).start()
 
     def __submit_license(self, data_entry, key_entry):
         """Handle license submission"""
@@ -224,32 +265,14 @@ class LicenseManager:
         license_key = key_entry.get("1.0", "end-1c").strip()
 
         if not license_data or not license_key:
+            self._update_status("Required fields missing.", col="#ff3333")
             tkmsg.showerror(
-                "Missing Data", "Both License Data and License Key are required.")
+                "Missing Data",
+                "Both License Data and License Key are required.")
             return
 
-        # self.verify_signature(license_data, license_key)
+        # Loudly declare if license is valid or not
         self.activate_license(license_data, license_key)
+
         self.license_window.destroy()
-
-
-"""
-
-[x] App begins.
-
-[] Look for license.json in your app’s data directory.
-
-If file not found → set is_premium = False.
-
-If file found → open it and parse JSON.
-
-Extract license_data and license_key.
-
-Run verify_signature(license_data, license_key) with your embedded public key.
-
-If valid → set is_premium = True.
-
-If invalid → delete license.json, set is_premium = False.
-
-
-"""
+        return

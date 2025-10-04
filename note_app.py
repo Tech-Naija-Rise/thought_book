@@ -60,6 +60,7 @@ class NotesApp(ctk.CTk):
                 else:
                     tkmsg.showerror("Error", "Incorrect password. Try again.")
 
+        # License Management
         self.license_manager = LicenseManager(self)
 
         # Draw the UI of the application
