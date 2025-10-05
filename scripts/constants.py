@@ -1,5 +1,7 @@
 # constants.py
-import os, json, uuid
+import os
+import json
+import uuid
 import logging
 from pathlib import Path
 import sys
@@ -55,7 +57,7 @@ def get_device_id(config_file):
                     return data["device_id"]
         except Exception:
             pass  # if file corrupted, regenerate
-    
+
     # Generate new UUID and save it
     device_id = str(uuid.uuid4())
     with open(config_file, "w") as f:
@@ -63,41 +65,10 @@ def get_device_id(config_file):
     return device_id
 
 
-def hideables(hide=True):
-    if not hide:
-        os.system(f'attrib -H "{HIDDEN_FOLDER}"')  # Hide folder
-        os.system(f'attrib -H "{METRICS_FILE}"')  # Hide metrics.json
-    else:
-        os.system(f'attrib +H "{HIDDEN_FOLDER}"')  # Hide folder
-        os.system(f'attrib +H "{METRICS_FILE}"')  # Hide metrics.json
-
-
-def write_file(file, contents={}):
-    """Must be in json"""
-    hideables(hide=False)
-    with open(file, "w") as w:
-        json.dump(contents, w)
-    hideables(hide=True)
-
-
-def read_file(file):
-    """Must be in json"""
-    hideables(hide=False)
-    with open(file, "r") as r:
-        contents = dict(json.load(r))
-    hideables(hide=True)
-    return contents
-
-
 # --- Main Folders ---
 MAIN_FOLDER = Path(__file__).resolve().parent.parent
 DEPLOY_INFO_PATH = MAIN_FOLDER / "deploy.info"
 
-# --- Load version if in deploy.info ---
-if DEPLOY_INFO_PATH.exists():
-    with open(DEPLOY_INFO_PATH, "r", encoding="utf-8") as f:
-        deploy_info = json.load(f)
-    APP_VERSION = deploy_info.get("app_version", APP_VERSION)
 
 # --- Images & Icons ---
 IMGS_FOLDER = MAIN_FOLDER / "imgs"
@@ -129,10 +100,6 @@ FB_PATH = NOTES_FOLDER / "feedbacks.json"
 SETTINGS_FILE = NOTES_FOLDER / "settings.json"
 
 
-
-
-
-
 # --- Freemium specification files functionality ---
 
 # config for unique device id
@@ -144,6 +111,53 @@ NOTE_COUNT_LIMIT_FALLBACK = 10
 MAX_UPGRADE_REMIND = 1
 UPGRADE_REMINDER_COUNT = 0
 
+
+def hideables(hide=True, file=METRICS_FILE):
+    if not hide:
+        os.system(f'attrib -H "{HIDDEN_FOLDER}"')  # Hide folder
+        os.system(f'attrib -H "{file}"')  # Hide metrics.json
+    else:
+        os.system(f'attrib +H "{HIDDEN_FOLDER}"')  # Hide folder
+        os.system(f'attrib +H "{file}"')  # Hide metrics.json
+
+
+def write_json_file(file, contents={}):
+    """Must be in json"""
+    hideables(hide=False, file=file)
+    with open(file, "w") as w:
+        json.dump(contents, w)
+    hideables(hide=True, file=file)
+
+
+def read_json_file(file):
+    """Must be in json"""
+    hideables(hide=False, file=file)
+    with open(file, "r") as r:
+        contents = dict(json.load(r))
+    hideables(hide=True, file=file)
+    return contents
+
+
+def read_txt_file(file):
+    """Must be string"""
+    with open(file, "r") as r:
+        contents = r.read()
+    return contents
+
+
+def write_txt_file(file, contents=""):
+    """Must be string"""
+    with open(file, "r") as w:
+        w.write(contents)
+    return
+
+
+# --- Load version if in deploy.info ---
+if DEPLOY_INFO_PATH.exists():
+    deploy_info = read_json_file(DEPLOY_INFO_PATH)
+    APP_VERSION = deploy_info.get("app_version", APP_VERSION)
+
+# METRICS
 METRICS_FILE_CONTENT = {
     "note_count_limit": NOTE_COUNT_LIMIT_FALLBACK,
     "max_upgrade_remind": MAX_UPGRADE_REMIND,
@@ -151,9 +165,9 @@ METRICS_FILE_CONTENT = {
 
 if not os.path.exists(METRICS_FILE):
     # Put defaults since it is not complete
-    write_file(METRICS_FILE, METRICS_FILE_CONTENT)
+    write_json_file(METRICS_FILE, METRICS_FILE_CONTENT)
 else:
-    METRICS_FILE_CONTENT = read_file(METRICS_FILE)
+    METRICS_FILE_CONTENT = read_json_file(METRICS_FILE)
 
 # --- Logging ---
 logging.basicConfig(
