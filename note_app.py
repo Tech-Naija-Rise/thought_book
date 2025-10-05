@@ -67,7 +67,6 @@ class NotesApp(ctk.CTk):
         self.current_note = ""
         self.autosave_after_id = None
         self.focused = ctk.BooleanVar(value=False)
-        
         self.start_ui()
 
     # --- License-based methods ---
