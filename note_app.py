@@ -66,7 +66,8 @@ class NotesApp(ctk.CTk):
         # Draw the UI of the application
         self.current_note = ""
         self.autosave_after_id = None
-        self.focused = ctk.BooleanVar(self, False, "focused")
+        self.focused = ctk.BooleanVar(value=False)
+        
         self.start_ui()
 
     # --- License-based methods ---
@@ -159,7 +160,6 @@ class NotesApp(ctk.CTk):
             self.add_note()
         else:
             self.load_note(0)
-
 
     def schedule_autosave(self):
         """Schedule an autosave after a short delay to reduce excessive writes."""
