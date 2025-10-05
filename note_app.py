@@ -306,7 +306,6 @@ class NotesApp(ctk.CTk):
         """Handle multiline bullet input when Enter key is pressed."""
         index = self.textbox.index("insert linestart")
         line_text = self.textbox.get(index, f"{index} lineend")
-
         if line_text.strip().startswith("-"):
             if line_text.strip() == "-":
                 # Empty bullet line, exit bullet mode
