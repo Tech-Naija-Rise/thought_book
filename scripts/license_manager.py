@@ -13,8 +13,8 @@ import base64
 import requests
 
 from scripts.constants import (EMAIL_ID_FILE, LICENSE_KEY_FILE,
-                               TNR_BMTB_SERVER, read_file, logging,
-                               APP_ICON, APP_NAME, write_file)
+                               TNR_BMTB_SERVER, read_json_file, logging,
+                               APP_ICON, APP_NAME, write_json_file)
 from scripts.utils import askstring
 
 
@@ -37,14 +37,13 @@ class LicenseManager:
     def unlock_feature(self, feature_id, associated_button):
         if "unlimited_notes" in feature_id:
             self.master.add_button()
-        
 
     def check_license(self):
         """Return True if a valid license exists locally."""
         if not os.path.exists(LICENSE_KEY_FILE):
             return False
         try:
-            encrypted_license = read_file(LICENSE_KEY_FILE)
+            encrypted_license = read_json_file(LICENSE_KEY_FILE)
             license_data = self.cipher.decrypt(encrypted_license)
             # Optional: validate license_data format
             return True
@@ -150,9 +149,9 @@ class LicenseManager:
         if not os.path.exists(EMAIL_ID_FILE):
             self.user_email = askstring(
                 "Email Required", "Enter your email (required for payment receipt):")
-            write_file(EMAIL_ID_FILE, {"user_email": self.user_email})
+            write_json_file(EMAIL_ID_FILE, {"user_email": self.user_email})
         else:
-            self.user_email = read_file(EMAIL_ID_FILE)["user_email"]
+            self.user_email = read_json_file(EMAIL_ID_FILE)["user_email"]
 
     def __freemium_reg_flow(self):
         """Perform server payment initiation"""

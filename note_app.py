@@ -7,7 +7,7 @@ with license key verification using RSA public key cryptography.
 # used to sign the license keys. Otherwise, license verification will fail.
 from scripts.password_manager import (PasswordManager, SimpleCipher,)
 from scripts.constants import (APP_NAME,
-                               APP_ICON,
+                               APP_ICON, APP_VERSION,
                                NOTES_DB,
                                PASS_FILE,
                                logging,)
@@ -18,7 +18,7 @@ from scripts.utils import (create_table,
                            save_note)
 from scripts.settings import (SettingsWindow, load_settings)
 from scripts.license_manager import LicenseManager
-
+from scripts.auto_updater import AutoUpdater
 import os
 import sys
 import customtkinter as ctk
@@ -66,11 +66,15 @@ class NotesApp(ctk.CTk):
         self.start_ui()
 
         # License (must be below because we modify buttons)
-        self.license_manager = LicenseManager(self) 
+        self.license_manager = LicenseManager(self)
         # will be merged later as is in another branch currently
-        
-    # --- License-based methods ---
 
+        self.updater = AutoUpdater(self, False)
+        logging.info(f"Current Version: {APP_VERSION}")
+        self.after(2000, self.updater.check_update_background)  # check after startup delay
+
+
+    # --- License-based methods ---
 
     # --- UI-based methods ---
 

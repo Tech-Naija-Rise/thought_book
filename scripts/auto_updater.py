@@ -10,18 +10,16 @@ import customtkinter as ctk
 from tkinter import messagebox
 
 from .constants import (logging, APP_VERSION,
-                        APP_NAME, APP_SHORT_NAME)
+                        APP_NAME, APP_SHORT_NAME, UPDATE_DOWNLOAD_FOLDER)
 
 UPDATE_INFO_URL = "https://tech-naija-rise.github.io/thought_book/update.json"
-DOWNLOAD_FOLDER = os.path.join(
-    os.path.expanduser("~"), f"{APP_SHORT_NAME}_updates")
 
 
 class AutoUpdater:
     def __init__(self, parent, auto_install=False):
         self.parent = parent
         self.auto_install = auto_install
-        os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
+        os.makedirs(UPDATE_DOWNLOAD_FOLDER, exist_ok=True)
 
     def check_update_background(self):
         """Run version check in background thread."""
@@ -35,15 +33,17 @@ class AutoUpdater:
             latest_version = data['latest_version']
             url = data['url']
             notes = data.get('notes', "")
+            logging.info(f"Latest Version found: {latest_version}")
 
             if version.parse(latest_version) > version.parse(APP_VERSION):
+                logging.info(f"Latest Version found: {latest_version}")
                 if self.auto_install:
                     self.download_and_install(url)
                 else:
                     self.prompt_update(latest_version, notes, url)
         except Exception as e:
             # Silent fail for background updates
-            logging.error("Update check failed:", e)
+            logging.error(f"Update check failed: {e}")
 
     def prompt_update(self, latest_version, notes, url):
         """Ask user for update, non-blocking."""
@@ -53,7 +53,7 @@ class AutoUpdater:
 
     def download_and_install(self, url):
         """Download installer with optional progress hook."""
-        filename = os.path.join(DOWNLOAD_FOLDER, url.split("/")[-1])
+        filename = os.path.join(UPDATE_DOWNLOAD_FOLDER, url.split("/")[-1])
         try:
             r = requests.get(url, stream=True)
             total_size = int(r.headers.get('content-length', 0))
@@ -67,8 +67,10 @@ class AutoUpdater:
                         # Optional: hook to update progress bar
 
             # Run installer
+            logging.info(f"finished installation {filename}")
             subprocess.Popen([filename], shell=True)
             self.parent.destroy()  # Close app to allow installer
         except Exception as e:
+            logging.error(f"Update failed: {e}")
             messagebox.showerror(
                 f"{APP_SHORT_NAME} Update", f"Update failed:\n{e}")

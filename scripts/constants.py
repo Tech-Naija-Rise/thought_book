@@ -169,6 +169,12 @@ if not os.path.exists(METRICS_FILE):
 else:
     METRICS_FILE_CONTENT = read_json_file(METRICS_FILE)
 
+
+# AutoUpdater
+UPDATE_DOWNLOAD_FOLDER = os.path.join(
+    os.path.expanduser("~"), f"{APP_SHORT_NAME}_updates")
+
+
 # --- Logging ---
 logging.basicConfig(
     filename=LOGS_FILE,
