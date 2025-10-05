@@ -66,15 +66,10 @@ class NotesApp(ctk.CTk):
         self.start_ui()
 
         # License (must be below because we modify buttons)
-        self.license_manager = LicenseManager(self)
-        if self.license_manager.check_license():
-            self.unlock_feature_checks(
-                self.license_manager.unlocked_feature_id)
+        self.license_manager = LicenseManager(self) 
+        # will be merged later as is in another branch currently
 
     # --- License-based methods ---
-    def unlock_feature_checks(self, feature_id):
-        if "premium;unlimited_notes" in feature_id:
-            self.license_manager.unlock_feature(feature_id)
 
 
     # --- UI-based methods ---

@@ -35,7 +35,7 @@ class LicenseManager:
         self.unlocked_feature_id = ""
 
     def unlock_feature(self, feature_id, associated_button):
-        if "unlimited_notes" in feature_id
+        if "unlimited_notes" in feature_id:
             self.master.add_button()
         
 
