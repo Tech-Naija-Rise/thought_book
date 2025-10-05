@@ -67,7 +67,6 @@ def get_device_id(config_file):
 
 # --- Main Folders ---
 MAIN_FOLDER = Path(__file__).resolve().parent.parent
-DEPLOY_INFO_PATH = MAIN_FOLDER / "deploy.info"
 
 
 # --- Images & Icons ---
@@ -91,6 +90,8 @@ LICENSE_KEY_FILE = HIDDEN_FOLDER / "license.key"
 ID_FILE = HIDDEN_FOLDER / "config.json"
 EMAIL_ID_FILE = HIDDEN_FOLDER / "email_config.json"
 
+# For updates system
+DEPLOY_INFO_PATH = NOTES_FOLDER / "deploy.info"
 
 NOTES_DB = NOTES_FOLDER / "BMTbnotes.db"
 RECOVERY_FILE = NOTES_FOLDER / "recovery.key"
