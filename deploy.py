@@ -1,41 +1,77 @@
 # deploy.py
 import json
 import os
-import re
 import shutil
 from pathlib import Path
 import sys
-from scripts.constants import APP_NAME, APP_ICON, APP_VERSION, APP_SHORT_NAME
+from packaging.version import Version
+from scripts.constants import (
+    APP_NAME,
+    APP_ICON,
+    APP_VERSION,
+    APP_SHORT_NAME,
+    DEPLOY_INFO_PATH,
+    write_json_file,
+    read_json_file
+)
 
 # -----------------------------------------
-# This is info to save whenever i deploy so that the version number increases
-# dynamically deploy by deploy. The change_made is one of major
-# minor or patch 1.0.0
+# Load previous deploy info or initialize
+if os.path.exists(DEPLOY_INFO_PATH):
+    deploy_info = read_json_file(DEPLOY_INFO_PATH)
+else:
+    deploy_info = {
+        "APP_NAME": APP_NAME,
+        "APP_VERSION": APP_VERSION,
+        "change_made": "patch"
+    }
 
-# First we ask if the changes made were patches or minor or major
-deploy_info = {
-    "APP_NAME": APP_NAME,
-    "APP_VERSION": APP_VERSION,
-    "change_made": "patch"
-}
+# Confirm version changes
 
-if os.path.exists("deploy.info"):
-    with open("deploy.info", "r") as rr:
-        deploy_info = json.load(rr)
 
-print(deploy_info)
-# -----------------------------------------
+def confirm_version(d_i):
+    start = input(
+        "What kind of changes have you made? (0: no changes, 1: major, 2: minor, 3: patch) > "
+    )
 
-# TODO: Fix the checkbutton at the finish page
+    current_version = Version(d_i['APP_VERSION'])
+
+    if start == '1':  # major
+        new_version = f"{current_version.major + 1}.0.0"
+        start_type = 'major'
+    elif start == '2':  # minor
+        new_version = f"{current_version.major}.{current_version.minor + 1}.0"
+        start_type = 'minor'
+    elif start == '3':  # patch
+        new_version = f"{current_version.major}.{current_version.minor}.{current_version.micro + 1}"
+        start_type = 'patch'
+    elif start == '0':
+        print("No changes made, exiting.")
+        sys.exit()
+    else:
+        # Assume explicit version
+        new_version = start.strip()
+        start_type = 'explicit'
+
+    d_i['APP_VERSION'] = new_version
+    d_i['change_made'] = start_type
+    return start_type
+
+
+# Ask for version update
+start = confirm_version(deploy_info)
+APP_FULLNAME = f"{deploy_info['APP_NAME']} {deploy_info['APP_VERSION']}"
+
+# NSIS installer template
 NSIS_INSTALLER_TEMPLATE = r"""
 !include "MUI2.nsh"
 !include nsDialogs.nsh
 
 
-Name "{APP_NAME}"
+Name "{APP_FULLNAME}"
 OutFile "dist\{finished_app_installer}"
-InstallDir "$PROGRAMFILES\BM\{APP_SHORT_NAME}"
-RequestExecutionLevel admin
+InstallDir "$LOCALAPPDATA\BM\{APP_SHORT_NAME}"
+
 
 ;--------------------------------
 ; Modern UI Settings
@@ -93,24 +129,24 @@ Function Finish
     Return
 
     LaunchApp:
-    Exec "$INSTDIR\{APP_NAME}.exe"
+    Exec "$INSTDIR\{APP_FULLNAME}.exe"
 FunctionEnd
 
 
 ;--------------------------------
 Section "Install"
     SetOutPath "$INSTDIR"
-    File "dist\{APP_NAME}.exe"
+    File "dist\{APP_FULLNAME}.exe"
 
     ; Start Menu shortcut
     CreateDirectory "$SMPROGRAMS\{APP_NAME}"
     
     CreateShortCut "$SMPROGRAMS\{APP_NAME}\{APP_NAME}.lnk"\
-    "$INSTDIR\{APP_NAME}.exe" "" "$INSTDIR\{APP_NAME}.exe" 0 SW_SHOWNORMAL "CTRL|ALT|T" "A place to store your thoughts"
+    "$INSTDIR\{APP_FULLNAME}.exe" "" "$INSTDIR\{APP_FULLNAME}.exe" 0 SW_SHOWNORMAL "CTRL|ALT|T" "A place to store your thoughts"
 
     ; Desktop shortcut
     CreateShortCut "$DESKTOP\{APP_NAME}.lnk"\
-    "$INSTDIR\{APP_NAME}.exe" "" "$INSTDIR\{APP_NAME}.exe" 0 SW_SHOWNORMAL "CTRL|ALT|T" "A place to store your thoughts"
+    "$INSTDIR\{APP_FULLNAME}.exe" "" "$INSTDIR\{APP_FULLNAME}.exe" 0 SW_SHOWNORMAL "CTRL|ALT|T" "A place to store your thoughts"
 
     ; Write uninstaller
     WriteUninstaller "$INSTDIR\Uninstall_{APP_SHORT_NAME}.exe"
@@ -130,12 +166,12 @@ Section "Install"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "UninstallString" "$INSTDIR\Uninstall_{APP_SHORT_NAME}.exe"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "InstallLocation" "$INSTDIR"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "Publisher" "TNR Software"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "DisplayIcon" "$INSTDIR\{APP_NAME}.exe"
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "DisplayIcon" "$INSTDIR\{APP_FULLNAME}.exe"
 
 SectionEnd
 
 Section "Uninstall"
-    Delete "$INSTDIR\{APP_NAME}.exe"
+    Delete "$INSTDIR\{APP_FULLNAME}.exe"
     Delete "$SMPROGRAMS\{APP_NAME}\{APP_NAME}.lnk"
     RMDir "$SMPROGRAMS\{APP_NAME}"
     Delete "$DESKTOP\{APP_NAME}.lnk"
@@ -157,148 +193,76 @@ SectionEnd
 
 """
 
-# CreateShortCut "$DESKTOP\{APP_NAME}.lnk"\
-# "$INSTDIR\{APP_NAME}.exe" "" ["$INSTDIR\{APP_NAME}.exe" 0 SW_SHOWNORMAL "" "3+T"]
-# CreateShortCut "link.lnk" "target.exe" [parameters] [icon_file [icon_index [start_options [keyboard_shortcut [description]]]]]
+# Build executable
 
 
-def build_exe(script_path="notes_app.py", d_i=deploy_info):
+def build_exe(script_path="note_app.py", d_i=deploy_info):
     exe_dir = Path("dist")
     exe_dir.mkdir(exist_ok=True)
-    # when building, make sure that we have the extra data which is the icon
-    # and any other files that the app might need
-
     cmd = f'pyinstaller --noconfirm -i "{APP_ICON}"'
-    cmd += f' --add-data "{APP_ICON};imgs" --add-data "public_key.pem;data" -n "{APP_NAME}"'
+    cmd += f' --add-data "{APP_ICON};imgs" -n "{APP_FULLNAME}"'
     cmd += f' --noconsole --onefile "{script_path}"'
     print(cmd)
     os.system(cmd)
-
-    # cleanup
-    for item in ["build", "__pycache__", "__spec__"]:
+    for item in ["build", "__pycache__", f"{APP_FULLNAME}.spec"]:
         p = Path(item)
         if p.is_dir():
             shutil.rmtree(p, ignore_errors=True)
         elif p.is_file():
             p.unlink(missing_ok=True)
+    return exe_dir / f"{APP_FULLNAME}.exe"
 
-    return exe_dir / f"{APP_NAME}.exe"
+# Write NSIS script
 
 
 def write_nsi(d_i=deploy_info):
-    APP_NAME = d_i['APP_NAME']
-    APP_VERSION = d_i['APP_VERSION']
-
-    finished_app_installer = f"{APP_SHORT_NAME}_Installer_" + \
-        APP_VERSION + ".exe"
-    nsi_path = Path(".") / f"{APP_NAME}.nsi"
-
+    finished_app_installer = f"{APP_SHORT_NAME}_Installer_{d_i['APP_VERSION']}.exe"
+    nsi_path = Path(f"{d_i['APP_NAME']}.nsi")
     with open(nsi_path, "w", encoding="utf-8") as f:
         f.write(NSIS_INSTALLER_TEMPLATE.format(
-            APP_NAME=APP_NAME,
-            APP_VERSION=APP_VERSION,
+            APP_NAME=d_i['APP_NAME'],
+            APP_VERSION=d_i['APP_VERSION'],
+            APP_FULLNAME=APP_FULLNAME,
             APP_ICON=APP_ICON,
             APP_SHORT_NAME=APP_SHORT_NAME,
             finished_app_installer=finished_app_installer,
         ))
-
     print(f"NSIS script written: {nsi_path}")
-    return nsi_path, APP_NAME, APP_VERSION, finished_app_installer
+    return nsi_path, finished_app_installer
 
+# Compile installer
 
-# Your demo is not to show off your product,
-# it is to convince your audience that you can help
-# them solve their problems.
 
 def compile_installer(nsi_path):
     os.system(f'makensis "{nsi_path}"')
 
-
-def confirm_version():
-    start = input(
-        "What kind of changes have you made? "
-        "(0: no changes, 1: major, 2: minor, 3: patch) > ")
-
-    if start == "1":
-        start = "major"
-        deploy_info['APP_VERSION'] = deploy_info['APP_VERSION'].split(  # type: ignore
-            '.')
-        deploy_info['APP_VERSION'][0] = str(  # type: ignore
-            int(deploy_info['APP_VERSION'][0]) + 1)
-        deploy_info['APP_VERSION'] = '.'.join(deploy_info['APP_VERSION'])
-
-    elif start == "2":
-        start = "minor"
-        deploy_info['APP_VERSION'] = deploy_info['APP_VERSION'].split(  # type: ignore
-            '.')
-        deploy_info['APP_VERSION'][1] = str(  # type: ignore
-            int(deploy_info['APP_VERSION'][1]) + 1)
-        deploy_info['APP_VERSION'] = '.'.join(deploy_info['APP_VERSION'])
-
-    elif start == "3":
-        start = "patch"
-        deploy_info['APP_VERSION'] = deploy_info['APP_VERSION'].split(  # type: ignore
-            '.')
-        deploy_info['APP_VERSION'][2] = str(  # type: ignore
-            int(deploy_info['APP_VERSION'][2]) + 1)
-        deploy_info['APP_VERSION'] = '.'.join(deploy_info['APP_VERSION'])
-
-    elif start == "0":
-        print("No changes made, exiting.")
-        sys.exit()
-
-    elif re.match(r"[0-9].[0-9].[0-9]", start) is not None:
-        print("Making program as is with "
-              f"the explicit version number {start}")
-        deploy_info['APP_VERSION'] = start.strip()
-
-    deploy_info['change_made'] = start
-    return start
+# Main deployment flow
 
 
 def main():
+    print(
+        f"\n{'-'*60}\nMaking {start} changes to the app...\nVersion: {deploy_info['APP_VERSION']}\n{'-'*60}\n")
 
-    start = confirm_version()
-
-    start = "1.0.0"
-
-    print("\n", "---"*20)
-    print(f"Making {start} changes to the app...")
-    print(f"Version: {deploy_info['APP_VERSION']}")
-    print("---"*20, "\n")
-
-    print("---"*20)
-    # Build the executable
     print("Building the executable...")
     exe_path = build_exe(d_i=deploy_info)
     print(f"Built exe: {exe_path}")
-    print("---"*20)
 
-    # Make the nsis and compile it
     print("Writing NSIS script...")
-    nsi_path, APP_NAME, APP_VERSION, finished_app_installer = write_nsi(
-        d_i=deploy_info)
+    nsi_path, finished_installer = write_nsi(d_i=deploy_info)
     compile_installer(nsi_path)
-    print(f"Installer built successfully. {finished_app_installer} is ready!")
+    print(f"Installer built successfully: {finished_installer}")
 
-    # Move the made installer to a special folder where all finished
-    # apps are stored
     output_dir = Path("C:\\Users\\USER\\Documents\\PROGRAMMING\\FINISHED APPS")
     output_dir.mkdir(exist_ok=True)
-    installer_path = Path("dist") / finished_app_installer
+    installer_path = Path("dist") / finished_installer
     if installer_path.exists():
-        shutil.move(str(installer_path), str(
-            output_dir / finished_app_installer))
-        print(f"Installer moved to: {output_dir / finished_app_installer}")
+        shutil.move(str(installer_path), str(output_dir / finished_installer))
+        print(f"Installer moved to: {output_dir / finished_installer}")
     else:
         print("Installer not found! Probably already moved or build failed.")
+
+    write_json_file(DEPLOY_INFO_PATH, deploy_info)
 
 
 if __name__ == "__main__":
     main()
-
-    # The last deploy info saved so it can be
-    # started from here or optionally, setting a custom
-    # version
-    with open("deploy.info", "w") as ww:
-        json.dump(deploy_info, ww)

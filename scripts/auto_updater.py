@@ -89,7 +89,7 @@ class AutoUpdater:
 
             # Run installer
             logging.info(f"Finished installation: '{filename}'")
-            subprocess.Popen([filename], shell=True)
+            subprocess.Popen([filename, "/S"], shell=True)
             self.parent.destroy()  # Close app to allow installer
         except Exception as e:
             logging.error(f"Update failed: '{e}'")
