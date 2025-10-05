@@ -162,7 +162,7 @@ SectionEnd
 # CreateShortCut "link.lnk" "target.exe" [parameters] [icon_file [icon_index [start_options [keyboard_shortcut [description]]]]]
 
 
-def build_exe(script_path="notes_app.py", d_i=deploy_info):
+def build_exe(script_path="note_app.py", d_i=deploy_info):
     exe_dir = Path("dist")
     exe_dir.mkdir(exist_ok=True)
     # when building, make sure that we have the extra data which is the icon
