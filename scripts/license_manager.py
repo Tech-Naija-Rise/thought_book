@@ -232,7 +232,9 @@ class LicenseManager:
             except Exception as e:
                 logging.error(
                     f"Server either sleeping, or internet is slow: {e}")
+                
             logging.info(f"Payment initiated, reference: {reference}")
+
             webbrowser.open_new_tab(resp.json()['data']['authorization_url'])
             self._update_status(
                 "Payment link opened in browser.",
