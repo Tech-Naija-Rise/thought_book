@@ -62,7 +62,7 @@ class NotesApp(ctk.CTk):
         # Draw the UI of the application
         self.current_note = ""
         self.autosave_after_id = None
-        self.focused = ctk.BooleanVar(self, False, "focused")
+        self.focused = ctk.BooleanVar(value=False)
         self.start_ui()
 
         # License (must be below because we modify buttons)
