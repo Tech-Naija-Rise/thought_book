@@ -68,7 +68,7 @@ class NotesApp(ctk.CTk):
         # License (must be below because we modify buttons)
         self.license_manager = LicenseManager(self) 
         # will be merged later as is in another branch currently
-
+        
     # --- License-based methods ---
 
 
