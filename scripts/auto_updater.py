@@ -11,10 +11,8 @@ from tkinter import messagebox
 
 from .constants import (logging, APP_VERSION,
                         APP_NAME, APP_SHORT_NAME,
-                        UPDATE_DOWNLOAD_FOLDER)
-
-UPDATE_INFO_URL = "https://tech-naija-rise.github.io/thought_book/update.json"
-
+                        UPDATE_DOWNLOAD_FOLDER,
+                        UPDATE_INFO_URL)
 
 class AutoUpdater:
     def __init__(self, parent, auto_install=False):
@@ -83,7 +81,6 @@ class AutoUpdater:
                             # Update progress bar
                             progress_bar.set(downloaded / total_size)
                             progress_window.update()  # refresh GUI
-
             if show_progress:
                 progress_window.destroy()  # close progress window
 
