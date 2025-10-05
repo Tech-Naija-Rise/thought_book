@@ -221,16 +221,22 @@ class LicenseManager:
     def __initiate_payment(self):
         """Perform server payment initiation"""
         try:
-            resp = requests.post(
-                f"{TNR_BMTB_SERVER}/payment",
-                json={"amount": 5000, "email": self.user_email})
-
-            reference = str(resp.json()["data"]["reference"])
-
+            # Since our users just might not have
+            # (stable) internet,
+            # we must deal with this TODO
+            try:
+                resp = requests.post(
+                    f"{TNR_BMTB_SERVER}/payment",
+                    json={"amount": 5000, "email": self.user_email})
+                reference = str(resp.json()["data"]["reference"])
+            except Exception as e:
+                logging.error(
+                    f"Server either sleeping, or internet is slow: {e}")
             logging.info(f"Payment initiated, reference: {reference}")
             webbrowser.open_new_tab(resp.json()['data']['authorization_url'])
             self._update_status(
-                "Payment link opened in browser.", col="#3fbf3f")
+                "Payment link opened in browser.",
+                col="#3fbf3f")
 
         except Exception as e:
             logging.error(f"Error during payment processing: {e}")
@@ -238,6 +244,8 @@ class LicenseManager:
                             "Failed to initiate payment."
                             " Might be a connection problem."
                             " Please try again later.")
+            self._update_status(
+                "Payment process failed. Please try again.", col="#ff3333")
 
     def _update_status(self, msg, col="#f5ca3f"):
         self.status.configure(text=msg, text_color=col)
