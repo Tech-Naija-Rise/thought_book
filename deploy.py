@@ -258,21 +258,21 @@ def confirm_version():
 
 def main():
 
-    # start = confirm_version()
+    start = confirm_version()
 
-    # start = "1.0.0"
+    start = "1.0.0"
 
-    # print("\n", "---"*20)
-    # print(f"Making {start} changes to the app...")
-    # print(f"Version: {deploy_info['APP_VERSION']}")
-    # print("---"*20, "\n")
+    print("\n", "---"*20)
+    print(f"Making {start} changes to the app...")
+    print(f"Version: {deploy_info['APP_VERSION']}")
+    print("---"*20, "\n")
 
-    # print("---"*20)
-    # # Build the executable
-    # print("Building the executable...")
-    # exe_path = build_exe(d_i=deploy_info)
-    # print(f"Built exe: {exe_path}")
-    # print("---"*20)
+    print("---"*20)
+    # Build the executable
+    print("Building the executable...")
+    exe_path = build_exe(d_i=deploy_info)
+    print(f"Built exe: {exe_path}")
+    print("---"*20)
 
     # Make the nsis and compile it
     print("Writing NSIS script...")
