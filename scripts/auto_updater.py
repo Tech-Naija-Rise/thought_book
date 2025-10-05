@@ -12,7 +12,7 @@ from tkinter import messagebox
 from .constants import (logging, APP_VERSION,
                         APP_NAME, APP_SHORT_NAME)
 
-UPDATE_INFO_URL = ""
+UPDATE_INFO_URL = "https://tech-naija-rise.github.io/thought_book/update.json"
 DOWNLOAD_FOLDER = os.path.join(
     os.path.expanduser("~"), f"{APP_SHORT_NAME}_updates")
 
