@@ -41,6 +41,7 @@ class LicenseManager:
 
     def load_and_validate_license(self):
         if not os.path.exists(self.license_file):
+            logging.error("License file corrupted or missing!")
             self.is_premium = False
             return False
 
@@ -48,9 +49,11 @@ class LicenseManager:
         self.license_data, self.license_key = self.parse_license(data)
 
         if self.verify_signature(self.license_data, self.license_key):
+            logging.error("License file found and valid!")
             self.is_premium = True
             return True
         else:
+            logging.error("License file corrupted or missing!")
             self.is_premium = False
             os.remove(self.license_file)  # 🚨 remove tampered/invalid license
             return False
@@ -95,12 +98,18 @@ class LicenseManager:
                 padding.PKCS1v15(),  # type: ignore
                 hashes.SHA256()  # type: ignore
             )
-            logging.info("License verified successfully.")
+
+            # ✅ Now confirm it’s for this specific machine
+            data = json.loads(license_data)
+            if data.get("device_id") != USER_APP_ID:
+                logging.error("License used on unauthorized device.")
+                return False
+
+            logging.info("License verified and bound to this device.")
             self.is_premium = True
             return True
         except Exception as e:
             logging.error(f"License verification failed: {e}")
-            self.is_premium = False
             return False
 
     # Formatting
@@ -139,8 +148,8 @@ class LicenseManager:
                 "• Premium features\n"
                 "• A smoother, distraction-free experience\n\n"
                 "To activate, please paste:\n"
-                "1. Your License Data\n"
-                "2. Your License Key\n\n"
+                
+                "• Your License Key\n\n"
                 "If you don’t have a license yet, click below to purchase one."
             ),
             justify="left",
@@ -173,7 +182,7 @@ class LicenseManager:
         submit_btn = ctk.CTkButton(
             self.license_window,
             text="Activate",
-            command=lambda: self.__submit_license( license_key_entry)
+            command=lambda: self.__submit_license(license_key_entry)
         )
         submit_btn.pack(pady=10)
         # something to tell the user that it is
@@ -279,9 +288,9 @@ class LicenseManager:
         self._update_status("Verifying license, please wait...")
 
         # license_data = data_entry.get("1.0", "end-1c").strip()
-        
+
         data = str(key_entry.get("1.0", "end-1c").strip()).split("||")
-        
+
         license_data = data[0]
         license_key = data[1]
 
