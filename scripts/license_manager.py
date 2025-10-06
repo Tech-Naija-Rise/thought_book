@@ -17,7 +17,8 @@ import requests
 from scripts.constants import (EMAIL_ID_FILE, LICENSE_FILE,
                                TNR_BMTB_SERVER,  logging,
                                APP_ICON, APP_NAME, read_json_file,
-                               PUBLIC_KEY, write_json_file)
+                               PUBLIC_KEY, write_json_file,
+                               USER_APP_ID, PREMIUM_PRICE)
 from scripts.utils import askstring, center_window
 
 
@@ -66,6 +67,7 @@ class LicenseManager:
             tkmsg.showinfo(
                 "Success", "License activated successfully! "
                 "You are now a premium user.")
+            logging.info("Premium mode on.")
             return True
         else:
             self.is_premium = False
@@ -119,7 +121,7 @@ class LicenseManager:
         """Display modal license entry window"""
         self.license_window = ctk.CTkToplevel(master)
         self.license_window.title(f"Activate {APP_NAME}")
-        self.license_window.geometry("500x510")
+        self.license_window.geometry("500x480")
         try:
             self.license_window.grab_set()
         except Exception:
@@ -156,11 +158,11 @@ class LicenseManager:
         link_label.bind("<Button-1>", lambda e: threading.Thread(
             target=self.initiate_payment, daemon=True).start())
 
-        license_data_label = ctk.CTkLabel(
-            self.license_window, text="License Data:")
-        license_data_label.pack(anchor="w", padx=20)
-        license_data_entry = ctk.CTkTextbox(self.license_window, height=4)
-        license_data_entry.pack(fill="x", padx=20, pady=(0, 10))
+        # license_data_label = ctk.CTkLabel(
+        #     self.license_window, text="License Data:")
+        # license_data_label.pack(anchor="w", padx=20)
+        # license_data_entry = ctk.CTkTextbox(self.license_window, height=4)
+        # license_data_entry.pack(fill="x", padx=20, pady=(0, 10))
 
         license_key_label = ctk.CTkLabel(
             self.license_window, text="License Key:")
@@ -171,8 +173,7 @@ class LicenseManager:
         submit_btn = ctk.CTkButton(
             self.license_window,
             text="Activate",
-            command=lambda: self.__submit_license(
-                license_data_entry, license_key_entry)
+            command=lambda: self.__submit_license( license_key_entry)
         )
         submit_btn.pack(pady=10)
         # something to tell the user that it is
@@ -225,14 +226,20 @@ class LicenseManager:
             # (stable) internet,
             # we must deal with this TODO
             try:
+                # send the device id as well
+                # this would be saved and tied
+                # to the key that will be
+                # given to you
                 resp = requests.post(
                     f"{TNR_BMTB_SERVER}/payment",
-                    json={"amount": 5000, "email": self.user_email})
+                    json={"amount": PREMIUM_PRICE,
+                          "email": self.user_email,
+                          "device_id": USER_APP_ID})
                 reference = str(resp.json()["data"]["reference"])
             except Exception as e:
                 logging.error(
                     f"Server either sleeping, or internet is slow: {e}")
-                
+
             logging.info(f"Payment initiated, reference: {reference}")
 
             webbrowser.open_new_tab(resp.json()['data']['authorization_url'])
@@ -267,12 +274,16 @@ class LicenseManager:
             threading.Thread(target=self.__initiate_payment,
                              daemon=True).start()
 
-    def __submit_license(self, data_entry, key_entry):
+    def __submit_license(self, key_entry):
         """Handle license submission"""
         self._update_status("Verifying license, please wait...")
 
-        license_data = data_entry.get("1.0", "end-1c").strip()
-        license_key = key_entry.get("1.0", "end-1c").strip()
+        # license_data = data_entry.get("1.0", "end-1c").strip()
+        
+        data = str(key_entry.get("1.0", "end-1c").strip()).split("||")
+        
+        license_data = data[0]
+        license_key = data[1]
 
         if not license_data or not license_key:
             self._update_status("Required fields missing.", col="#ff3333")

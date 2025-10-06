@@ -33,9 +33,6 @@ APP_NAME = "Thought Book"
 APP_VERSION = "1.0.0"
 APP_SHORT_NAME = "BMTB"
 
-# This is the unique id for the app on each individual installation of bmtb
-USER_APP_ID = ""  # XXX for freemium purposes.
-
 
 # --- Helper Functions ---
 def resource_path(relative_path: Path) -> Path:
@@ -48,22 +45,6 @@ def resource_path(relative_path: Path) -> Path:
     return base_path / relative_path
 
 
-def get_device_id(config_file):
-    """Returns a persistent unique ID for this device/app install."""
-    if os.path.exists(config_file):
-        try:
-            with open(config_file, "r") as f:
-                data = json.load(f)
-                if "device_id" in data:
-                    return data["device_id"]
-        except Exception:
-            pass  # if file corrupted, regenerate
-
-    # Generate new UUID and save it
-    device_id = str(uuid.uuid4())
-    with open(config_file, "w") as f:
-        json.dump({"device_id": device_id}, f)
-    return device_id
 
 
 # --- Main Folders ---
@@ -105,11 +86,6 @@ LOGS_FILE = NOTES_FOLDER / "app.log"
 FB_PATH = NOTES_FOLDER / "feedbacks.json"
 SETTINGS_FILE = NOTES_FOLDER / "settings.json"
 
-
-# --- Freemium specification files functionality ---
-
-# config for unique device id
-USER_APP_ID = get_device_id(ID_FILE)
 
 
 # default counts
@@ -156,6 +132,31 @@ def write_txt_file(file, contents=""):
     with open(file, "r") as w:
         w.write(contents)
     return
+
+def get_device_id(config_file):
+    """Returns a persistent unique ID for this device/app install."""
+    if os.path.exists(config_file):
+        try:
+            data = read_json_file(config_file)
+            if "device_id" in data:
+                return data["device_id"]
+        except Exception:
+            pass  # if file corrupted, regenerate
+
+    # Generate new UUID and save it
+    device_id = str(uuid.uuid4())
+    write_json_file(config_file, {"device_id": device_id})
+    return device_id
+
+
+# --- Freemium specification files functionality ---
+
+# This is the unique id for
+# the app on each individual
+# installation of bmtb
+# config for unique device id
+USER_APP_ID = get_device_id(ID_FILE)
+PREMIUM_PRICE = 5000
 
 
 METRICS_FILE_CONTENT = {
