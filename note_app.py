@@ -119,7 +119,7 @@ class NotesApp(ctk.CTk):
             pair, fg_color="#555555",
             width=80,
             text="Focus",
-            command=self.focus)
+            command=self.focus_write)
         focus_btn.pack(side="right")
 
         self.note_buttons = []
@@ -179,13 +179,15 @@ class NotesApp(ctk.CTk):
             logging.info("App closed successfully.")
             self.destroy()
 
-    def focus(self):
+    def __flip_focus(self, focus_bool):
         # This is also a valuable feature given the UI
         """Toggle focus mode: hides/shows sidebar and extra buttons."""
-        is_focused = not self.focused.get()
+        is_focused = not focus_bool
         self.focused.set(is_focused)
+        return self.focused.get()
 
-        if is_focused:
+    def focus_write(self):
+        if self.__flip_focus(self.focused.get()):
             self.unfocus_btn.pack_forget()
             self.extra_bt_frame.pack_forget()
             self.sidebar.pack(side="left", fill="y")
