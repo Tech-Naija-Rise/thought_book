@@ -45,48 +45,6 @@ def resource_path(relative_path: Path) -> Path:
     return base_path / relative_path
 
 
-def get_device_id(config_file):
-    """Returns a persistent unique ID for this device/app install."""
-    if os.path.exists(config_file):
-        try:
-            with open(config_file, "r") as f:
-                data = json.load(f)
-                if "device_id" in data:
-                    return data["device_id"]
-        except Exception:
-            pass  # if file corrupted, regenerate
-    
-    # Generate new UUID and save it
-    device_id = str(uuid.uuid4())
-    with open(config_file, "w") as f:
-        json.dump({"device_id": device_id}, f)
-    return device_id
-
-
-def hideables(hide=True):
-    if not hide:
-        os.system(f'attrib -H "{HIDDEN_FOLDER}"')  # Hide folder
-        os.system(f'attrib -H "{METRICS_FILE}"')  # Hide metrics.json
-    else:
-        os.system(f'attrib +H "{HIDDEN_FOLDER}"')  # Hide folder
-        os.system(f'attrib +H "{METRICS_FILE}"')  # Hide metrics.json
-
-
-def write_file(file, contents={}):
-    """Must be in json"""
-    hideables(hide=False)
-    with open(file, "w") as w:
-        json.dump(contents, w)
-    hideables(hide=True)
-
-
-def read_file(file):
-    """Must be in json"""
-    hideables(hide=False)
-    with open(file, "r") as r:
-        contents = dict(json.load(r))
-    hideables(hide=True)
-    return contents
 
 
 # --- Main Folders ---
@@ -133,7 +91,6 @@ NOTE_COUNT_LIMIT_FALLBACK = 10
 MAX_UPGRADE_REMIND = 1
 UPGRADE_REMINDER_COUNT = 0
 
-
 def hideables(hide=True, file=METRICS_FILE):
     if not hide:
         os.system(f'attrib -H "{HIDDEN_FOLDER}"')  # Hide folder
@@ -197,119 +154,12 @@ def get_device_id(config_file):
 # config for unique device id
 USER_APP_ID = get_device_id(ID_FILE)
 PREMIUM_PRICE = 5000
-
-
-
-def hideables(hide=True, file=METRICS_FILE):
-    if not hide:
-        os.system(f'attrib -H "{HIDDEN_FOLDER}"')  # Hide folder
-        os.system(f'attrib -H "{file}"')  # Hide metrics.json
-    else:
-        os.system(f'attrib +H "{HIDDEN_FOLDER}"')  # Hide folder
-        os.system(f'attrib +H "{file}"')  # Hide metrics.json
-
-
-def write_json_file(file, contents={}):
-    """Must be in json"""
-    hideables(hide=False)
-    with open(file, "w") as w:
-        json.dump(contents, w)
-    hideables(hide=True)
-
-
-def read_json_file(file):
-    """Must be in json"""
-    hideables(hide=False)
-    with open(file, "r") as r:
-        contents = dict(json.load(r))
-    hideables(hide=True)
-    return contents
-
-
-def read_txt_file(file):
-    """Must be string"""
-    with open(file, "r") as r:
-        contents = r.read()
-    return contents
-
-
-def write_txt_file(file, contents=""):
-    """Must be string"""
-    with open(file, "r") as w:
-        w.write(contents)
-    return
-
-def get_device_id(config_file):
-    """Returns a persistent unique ID for this device/app install."""
-    if os.path.exists(config_file):
-        try:
-            data = read_json_file(config_file)
-            if "device_id" in data:
-                return data["device_id"]
-        except Exception:
-            pass  # if file corrupted, regenerate
-
-    # Generate new UUID and save it
-    device_id = str(uuid.uuid4())
-    write_json_file(config_file, {"device_id": device_id})
-    return device_id
-
-
-# --- Freemium specification files functionality ---
-
-# This is the unique id for
-# the app on each individual
-# installation of bmtb
-# config for unique device id
-USER_APP_ID = get_device_id(ID_FILE)
-PREMIUM_PRICE = 5000
-
-
-
-def hideables(hide=True, file=METRICS_FILE):
-    if not hide:
-        os.system(f'attrib -H "{HIDDEN_FOLDER}"')  # Hide folder
-        os.system(f'attrib -H "{file}"')  # Hide metrics.json
-    else:
-        os.system(f'attrib +H "{HIDDEN_FOLDER}"')  # Hide folder
-        os.system(f'attrib +H "{file}"')  # Hide metrics.json
-
-
-def write_json_file(file, contents={}):
-    """Must be in json"""
-    hideables(hide=False, file=file)
-    with open(file, "w") as w:
-        json.dump(contents, w)
-    hideables(hide=True, file=file)
-
-
-def read_json_file(file):
-    """Must be in json"""
-    hideables(hide=False, file=file)
-    with open(file, "r") as r:
-        contents = dict(json.load(r))
-    hideables(hide=True, file=file)
-    return contents
-
-
-def read_txt_file(file):
-    """Must be string"""
-    with open(file, "r") as r:
-        contents = r.read()
-    return contents
-
-
-def write_txt_file(file, contents=""):
-    """Must be string"""
-    with open(file, "r") as w:
-        w.write(contents)
-    return
 
 
 # --- Load version if in deploy.info ---
 if DEPLOY_INFO_PATH.exists():
     deploy_info = read_json_file(DEPLOY_INFO_PATH)
-    APP_VERSION = deploy_info.get("app_version", APP_VERSION)
+    APP_VERSION = deploy_info.get("APP_VERSION", APP_VERSION)
 
 # METRICS
 METRICS_FILE_CONTENT = {

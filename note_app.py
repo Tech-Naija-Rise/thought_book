@@ -13,7 +13,7 @@ from scripts.constants import (APP_NAME,
                                PASS_FILE,
                                logging,)
 
-from scripts.utils import ( center_window, create_table,
+from scripts.utils import (center_window, create_table,
                            delete_note,
                            get_notes,
                            save_note)
@@ -68,11 +68,10 @@ class NotesApp(ctk.CTk):
         self.focused = ctk.BooleanVar(value=False)
         self.start_ui()
 
-
         self.updater = AutoUpdater(self, False)
         logging.info(f"Current Version: {APP_VERSION}")
-        self.after(2000, self.updater.check_update_background)  # check after startup delay
-
+        # check after startup delay
+        self.after(2000, self.updater.check_update_background)
 
     # --- License-based methods ---
 
@@ -133,7 +132,7 @@ class NotesApp(ctk.CTk):
         # Editor
         self.right_side = ctk.CTkFrame(self, height=300)
         self.right_side.pack(side="right", fill="both",
-                              expand=True, padx=10)
+                             expand=True, padx=10)
 
         self.editor_frame = ctk.CTkFrame(self.right_side)
         self.editor_frame.pack(side="top", pady=10, expand=True, fill="both")
@@ -149,8 +148,8 @@ class NotesApp(ctk.CTk):
         self.extra_bt_frame = ctk.CTkFrame(self.right_side)
         self.unfocus_btn = ctk.CTkButton(
             self.extra_bt_frame, text="Unfocus",
-              width=80, command=self.focus_write,
-                fg_color="#555555")
+            width=80, command=self.focus_write,
+            fg_color="#555555")
 
         self.title_entry.bind(
             "<KeyRelease>", lambda e: self.schedule_autosave())
@@ -189,7 +188,7 @@ class NotesApp(ctk.CTk):
         """Toggle focus mode: hides/shows sidebar and extra buttons."""
         is_focused = not self.focused.get()
         self.focused.set(is_focused)
-    
+
         if is_focused:
             self.unfocus_btn.pack_forget()
             self.extra_bt_frame.pack_forget()
@@ -224,7 +223,7 @@ class NotesApp(ctk.CTk):
                 " designed so you can try it out before"
                 " deciding to buy."
                 " Would you like to proceed"
-                " to buy the full version now?"):
+                    " to buy the full version now?"):
                 self.license_manager._show_license_window(self)
             return
         # --------------------------------
@@ -309,7 +308,8 @@ class NotesApp(ctk.CTk):
         if self.current_index is None:
             return
 
-        if tkmsg.askyesno("Confirm Delete", "Are you sure you want to delete this note?"):
+        if tkmsg.askyesno("Confirm Delete",
+                          "Are you sure you want to delete this note?"):
             note_id = self.notes[self.current_index].get("id")
             if note_id:
                 delete_note(note_id)
@@ -353,7 +353,6 @@ def main():
     app = NotesApp()
     center_window(app)
     app.mainloop()
-    
 
 
 if __name__ == "__main__":
