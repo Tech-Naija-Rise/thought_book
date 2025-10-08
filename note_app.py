@@ -33,8 +33,7 @@ class NotesApp(ctk.CTk):
 
         # Database
         try:
-            if not os.path.exists(NOTES_DB):
-                create_table()
+            create_table()
         except Exception as e:
             logging.error(f"Error while creating table: {e}")
 
@@ -150,7 +149,7 @@ class NotesApp(ctk.CTk):
         self.extra_bt_frame = ctk.CTkFrame(self.right_side)
         self.unfocus_btn = ctk.CTkButton(
             self.extra_bt_frame, text="Unfocus",
-              width=80, command=self.focus,
+              width=80, command=self.focus_write,
                 fg_color="#555555")
 
         self.title_entry.bind(
@@ -185,15 +184,13 @@ class NotesApp(ctk.CTk):
             logging.info("App closed successfully.")
             self.destroy()
 
-    def __flip_focus(self, focus_bool):
+    def focus_write(self):
         # This is also a valuable feature given the UI
         """Toggle focus mode: hides/shows sidebar and extra buttons."""
-        is_focused = not focus_bool
+        is_focused = not self.focused.get()
         self.focused.set(is_focused)
-        return self.focused.get()
-
-    def focus_write(self):
-        if self.__flip_focus(self.focused.get()):
+    
+        if is_focused:
             self.unfocus_btn.pack_forget()
             self.extra_bt_frame.pack_forget()
             self.sidebar.pack(side="left", fill="y")
@@ -354,7 +351,6 @@ class NotesApp(ctk.CTk):
 def main():
     ctk.set_appearance_mode("dark")
     app = NotesApp()
-    center_window(app)
     app.mainloop()
     
 
