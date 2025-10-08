@@ -25,10 +25,10 @@ from .constants import (logging,
                         tkmsg, APP_NAME,
                         BMTB_FEEDBACK_SERVER,
                         APP_ICON)
-from .utils import  has_internet
+from .utils import has_internet
 
 
-class FeedbackAPI(ctk.CTkToplevel):
+class FeedbackAPI:
     def __init__(self, parent=None) -> None:
         """Collect feedback from offline and when the user
         gets online, then just send it to the developer through
@@ -38,57 +38,7 @@ class FeedbackAPI(ctk.CTkToplevel):
         get online so that the feedback can be sent.
         """
         self.parent = parent
-        super().__init__(self.parent)
-        self.transient(self.parent)
-        self.title(f"BM - Give feedback")
-        self.iconbitmap(APP_ICON)
-        self.wm_protocol("WM_DELETE_WINDOW", self.on_close)
-
-
-        self.help = ctk.CTkLabel(
-            self, text="Report Issues, suggest feedback, or provide general feedback here")
-        self.help.pack()
-
-        self.credentials_frame = ctk.CTkFrame(self)
-        self.credentials_frame.pack(fill="x", expand=True)
-
-        self.editor_frame = ctk.CTkFrame(self)
-        self.editor_frame.pack(side="top",
-                               pady=10, expand=True, fill="both")
-
-        self.name_entry = ctk.CTkEntry(
-            self.credentials_frame, placeholder_text="Your Full Name (Optional)")
-        self.name_entry.pack(expand=1, fill="x")
-
-        self.email_entry = ctk.CTkEntry(
-            self.credentials_frame,
-            placeholder_text="We need your email to notify you if we have a fix.")
-        self.email_entry.pack(expand=1, fill="x")
-
-        self.textbox = ctk.CTkTextbox(
-            self.editor_frame, undo=True, wrap=ctk.WORD)
-        self.textbox.pack(fill="both", expand=True, pady=5)
-
-        self.actions_frame = ctk.CTkFrame(self)
-        self.actions_frame.pack(fill="x", expand=True)
-
-        self.send_btn = ctk.CTkButton(
-            self.actions_frame, width=30, text="Send Feedback",
-            command=self.save_or_send)
-        self.send_btn.pack(side="right", padx=5)
-
-        self.cancel_btn = ctk.CTkButton(self.actions_frame,
-                                        width=30,
-                                        text="Cancel",
-                                        fg_color="#555555",
-                                        command=self.on_close)
-        self.cancel_btn.pack(side="right", padx=5)
-
-        self.helper = ctk.CTkLabel(
-            self.actions_frame,
-            text_color="orange")
-        self.helper.pack(pady=10)
-        self.helper.configure(text="")
+        
 
         # Automatically check for internet in the background
         # and send feedback if there is any saved
@@ -108,7 +58,57 @@ class FeedbackAPI(ctk.CTkToplevel):
         return []
 
     def start(self):
-        self.mainloop()
+        self.window = ctk.CTkToplevel()
+        self.window.wm_transient(self.parent)
+        self.window.wm_title(f"{APP_NAME} - Give feedback")
+        self.window.wm_iconbitmap(APP_ICON)
+        self.window.wm_protocol("WM_DELETE_WINDOW", self.on_close)
+
+        self.help = ctk.CTkLabel(
+            self.window, text="Report Issues, suggest feedback, or provide general feedback here")
+        self.help.pack()
+
+        self.credentials_frame = ctk.CTkFrame(self.window)
+        self.credentials_frame.pack(fill="x", expand=True)
+
+        self.editor_frame = ctk.CTkFrame(self.window)
+        self.editor_frame.pack(side="top",
+                               pady=10, expand=True, fill="both")
+
+        self.name_entry = ctk.CTkEntry(
+            self.credentials_frame, placeholder_text="Your Full Name (Optional)")
+        self.name_entry.pack(expand=1, fill="x")
+
+        self.email_entry = ctk.CTkEntry(
+            self.credentials_frame,
+            placeholder_text="We need your email to notify you if we have a fix.")
+        self.email_entry.pack(expand=1, fill="x")
+
+        self.textbox = ctk.CTkTextbox(
+            self.editor_frame, undo=True, wrap=ctk.WORD)
+        self.textbox.pack(fill="both", expand=True, pady=5)
+
+        self.actions_frame = ctk.CTkFrame(self.window)
+        self.actions_frame.pack(fill="x", expand=True)
+
+        self.send_btn = ctk.CTkButton(
+            self.actions_frame, width=30, text="Send Feedback",
+            command=self.save_or_send)
+        self.send_btn.pack(side="right", padx=5)
+
+        self.cancel_btn = ctk.CTkButton(self.actions_frame,
+                                        width=30,
+                                        text="Cancel",
+                                        fg_color="#555555",
+                                        command=self.on_close)
+        self.cancel_btn.pack(side="right", padx=5)
+
+        self.helper = ctk.CTkLabel(
+            self.actions_frame,
+            text_color="orange")
+        self.helper.pack(pady=10)
+        self.helper.configure(text="")
+        # self.window.wait_window()
 
     def _validate(self):
         """Validate user input and return feedback data."""
@@ -256,7 +256,7 @@ class FeedbackAPI(ctk.CTkToplevel):
 
     def on_close(self):
         """what to do before closing"""
-        self.after(500, self.destroy)
+        self.window.after(500, self.window.destroy)
 
     def save_locally(self, data={}):
         """Append the latest feedback to the end of 

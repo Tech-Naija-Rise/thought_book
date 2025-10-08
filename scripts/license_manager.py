@@ -193,7 +193,7 @@ class LicenseManager:
             text_color="#f5ca3f")
         self.status.pack(anchor="w", padx=20)
 
-        self.license_window.wait_window()
+        # self.license_window.wait_window()
 
     def __ask_email(self):
         """Prompt user for email if not stored

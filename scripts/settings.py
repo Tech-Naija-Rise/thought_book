@@ -37,6 +37,8 @@ class SettingsWindow(ctk.CTkToplevel):
         self.cipher = cipher
         self.parent = parent
         self.settings = load_settings()
+        self.feedback_manager = FeedbackAPI(self)
+        self.license_manager = LicenseManager(self)
 
         # --- Theme palette ---
         self.colors = {
@@ -81,6 +83,8 @@ class SettingsWindow(ctk.CTkToplevel):
         tk.Button(pass_frame, text="Change Password", command=self.change_password,
                   **self.styles["button"]).pack(anchor="w", padx=10, pady=5)
 
+        #
+
         # Security section
         sec_frame = make_section("Security")
         self.startup_lock_var = tk.BooleanVar(
@@ -103,8 +107,13 @@ class SettingsWindow(ctk.CTkToplevel):
         tk.Button(fb_frame, text="Give Feedback", command=self.feedback_collect,
                   **self.styles["button"]).pack(anchor="w", padx=10, pady=5)
 
-        tk.Button(fb_frame, text=f"Purchase {APP_NAME}", command=self.feedback_collect,
-                  **self.styles["button"]).pack(anchor="w", padx=10, pady=5)
+        purchase_bt = tk.Button(fb_frame,
+                                text=f"Purchase {APP_NAME}",
+                                command=self.start_license,
+                                **self.styles["button"])
+        purchase_bt.pack(anchor="w", padx=10, pady=5)
+        if self.license_manager.is_premium_user():
+            purchase_bt.config(state="disabled")
 
         # Bottom buttons
         btn_frame = tk.Frame(self, bg=self.colors["bg"])
@@ -116,6 +125,7 @@ class SettingsWindow(ctk.CTkToplevel):
                   **self.styles["button"]).pack(side="right")
 
     # ----- Logic unchanged -----
+
     def toggle_startup_lock(self):
         if self.startup_lock_var.get():
             new_pass = askstring(
@@ -142,14 +152,10 @@ class SettingsWindow(ctk.CTkToplevel):
             tkmsg.showinfo("Info", "Password request at startup disabled.")
 
     def feedback_collect(self, event=None):
-        self.feedbackAPI = FeedbackAPI(self)
-        self.feedbackAPI.start()
+        self.feedback_manager.start()
 
-    def license_manager(self, event=None):
-        # Make the license Manager and me brother
-        # but exit me first
-        self.licenseAPI = LicenseManager(self.parent)
-        self.licenseAPI._show_license_window(self.parent)
+    def start_license(self, event=None):
+        self.license_manager._show_license_window(self.parent)
 
     def confirm_clear_all(self):
         answer = askstring(

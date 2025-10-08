@@ -351,6 +351,7 @@ class NotesApp(ctk.CTk):
 def main():
     ctk.set_appearance_mode("dark")
     app = NotesApp()
+    center_window(app)
     app.mainloop()
     
 
