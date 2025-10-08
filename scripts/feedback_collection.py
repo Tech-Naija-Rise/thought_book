@@ -25,7 +25,7 @@ from .constants import (logging,
                         tkmsg, APP_NAME,
                         BMTB_FEEDBACK_SERVER,
                         APP_ICON)
-from .utils import has_internet
+from .utils import  has_internet
 
 
 class FeedbackAPI(ctk.CTkToplevel):
@@ -41,9 +41,9 @@ class FeedbackAPI(ctk.CTkToplevel):
         super().__init__(self.parent)
         self.transient(self.parent)
         self.title(f"BM - Give feedback")
-        self.geometry("500x400")
         self.iconbitmap(APP_ICON)
         self.wm_protocol("WM_DELETE_WINDOW", self.on_close)
+
 
         self.help = ctk.CTkLabel(
             self, text="Report Issues, suggest feedback, or provide general feedback here")
@@ -140,7 +140,7 @@ class FeedbackAPI(ctk.CTkToplevel):
             try:
                 with open(log_path, "r") as lf:
                     lines = lf.readlines()
-                    return "".join(lines[-5:])  # Return last 5 lines
+                    return "".join(lines[-3:])  # Return last 5 lines
             except Exception as e:
                 logging.error(f"Error reading log file: {e}")
                 return "Could not read log file."

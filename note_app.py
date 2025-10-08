@@ -1,3 +1,4 @@
+# note_app.py
 """
 Freemium version of the application implemented correctly
 with license key verification using RSA public key cryptography.
@@ -12,7 +13,7 @@ from scripts.constants import (APP_NAME,
                                PASS_FILE,
                                logging,)
 
-from scripts.utils import (create_table,
+from scripts.utils import ( center_window, create_table,
                            delete_note,
                            get_notes,
                            save_note)
@@ -59,15 +60,15 @@ class NotesApp(ctk.CTk):
                 else:
                     tkmsg.showerror("Error", "Incorrect password. Try again.")
 
+        # License Management
+        self.license_manager = LicenseManager(self)
+
         # Draw the UI of the application
         self.current_note = ""
         self.autosave_after_id = None
         self.focused = ctk.BooleanVar(value=False)
         self.start_ui()
 
-        # License (must be below because we modify buttons)
-        self.license_manager = LicenseManager(self)
-        # will be merged later as is in another branch currently
 
         self.updater = AutoUpdater(self, False)
         logging.info(f"Current Version: {APP_VERSION}")
@@ -84,8 +85,9 @@ class NotesApp(ctk.CTk):
             return
 
         self.title(APP_NAME)
-        self.geometry("800x500")
+        self.geometry("900x500")
         self.wm_iconbitmap(APP_ICON)
+
         self.notes = self.load_notes()
         self.current_index = None
 
@@ -112,15 +114,18 @@ class NotesApp(ctk.CTk):
 
         pair = ctk.CTkFrame(self.sidebar)
         pair.pack(fill="x")
-        settings_btn = ctk.CTkButton(pair, fg_color="#555555", text="Settings",
-                                     width=80, command=lambda: SettingsWindow(self, self.cipher))
+        settings_btn = ctk.CTkButton(pair, fg_color="#555555",
+                                     text="Settings",
+                                     width=80,
+                                     command=lambda:
+                                     SettingsWindow(self, self.cipher))
         settings_btn.pack(side="left", pady=5)
 
         focus_btn = ctk.CTkButton(
             pair, fg_color="#555555",
             width=80,
             text="Focus",
-            command=self.focus)
+            command=self.focus_write)
         focus_btn.pack(side="right")
 
         self.note_buttons = []
@@ -128,7 +133,8 @@ class NotesApp(ctk.CTk):
 
         # Editor
         self.right_side = ctk.CTkFrame(self, height=300)
-        self.right_side.pack(side="right", fill="both", expand=True, padx=10)
+        self.right_side.pack(side="right", fill="both",
+                              expand=True, padx=10)
 
         self.editor_frame = ctk.CTkFrame(self.right_side)
         self.editor_frame.pack(side="top", pady=10, expand=True, fill="both")
@@ -143,7 +149,9 @@ class NotesApp(ctk.CTk):
 
         self.extra_bt_frame = ctk.CTkFrame(self.right_side)
         self.unfocus_btn = ctk.CTkButton(
-            self.extra_bt_frame, text="Unfocus", width=80, command=self.focus, fg_color="#555555")
+            self.extra_bt_frame, text="Unfocus",
+              width=80, command=self.focus,
+                fg_color="#555555")
 
         self.title_entry.bind(
             "<KeyRelease>", lambda e: self.schedule_autosave())
@@ -177,13 +185,15 @@ class NotesApp(ctk.CTk):
             logging.info("App closed successfully.")
             self.destroy()
 
-    def focus(self):
+    def __flip_focus(self, focus_bool):
         # This is also a valuable feature given the UI
         """Toggle focus mode: hides/shows sidebar and extra buttons."""
-        is_focused = not self.focused.get()
+        is_focused = not focus_bool
         self.focused.set(is_focused)
+        return self.focused.get()
 
-        if is_focused:
+    def focus_write(self):
+        if self.__flip_focus(self.focused.get()):
             self.unfocus_btn.pack_forget()
             self.extra_bt_frame.pack_forget()
             self.sidebar.pack(side="left", fill="y")
@@ -206,6 +216,22 @@ class NotesApp(ctk.CTk):
 
     def add_note(self):
         """Create a new note, save current, and enforce freemium limits."""
+        MAX_FREEMIUM_NOTES = 5
+
+        # --- Mandatory Security Check ---
+        if not self.license_manager.is_premium_user()\
+                and self.get_note_count() >= MAX_FREEMIUM_NOTES:
+            if tkmsg.askyesno(
+                f"{APP_NAME} - Trial Version",
+                f"This is a trial version of {APP_NAME}"
+                " designed so you can try it out before"
+                " deciding to buy."
+                " Would you like to proceed"
+                " to buy the full version now?"):
+                self.license_manager._show_license_window(self)
+            return
+        # --------------------------------
+
         if self.current_index is not None:
             self.save_current_note(index_to_save=self.current_index)
 
@@ -328,8 +354,9 @@ class NotesApp(ctk.CTk):
 def main():
     ctk.set_appearance_mode("dark")
     app = NotesApp()
-    app.iconbitmap(APP_ICON)
+    center_window(app)
     app.mainloop()
+    
 
 
 if __name__ == "__main__":

@@ -25,15 +25,13 @@ tzsNrK+dDT/IpbPOQ4yniByxqtHFhgXRrvoGZLUyxRetKsTvcfImirYL9rTS8ga3
 o2blCB3/0uiqcqq1KaOFwmnEhzh+zGBEecgm23ot3AQlq9VMkSRQBmPLVTjJW3pH
 lQIDAQAB
 -----END PUBLIC KEY-----
+
 """
 
 # --- App Info ---
 APP_NAME = "Thought Book"
 APP_VERSION = "1.0.0"
 APP_SHORT_NAME = "BMTB"
-
-# This is the unique id for the app on each individual installation of bmtb
-USER_APP_ID = ""  # XXX for freemium purposes.
 
 
 # --- Helper Functions ---
@@ -57,12 +55,38 @@ def get_device_id(config_file):
                     return data["device_id"]
         except Exception:
             pass  # if file corrupted, regenerate
-
+    
     # Generate new UUID and save it
     device_id = str(uuid.uuid4())
     with open(config_file, "w") as f:
         json.dump({"device_id": device_id}, f)
     return device_id
+
+
+def hideables(hide=True):
+    if not hide:
+        os.system(f'attrib -H "{HIDDEN_FOLDER}"')  # Hide folder
+        os.system(f'attrib -H "{METRICS_FILE}"')  # Hide metrics.json
+    else:
+        os.system(f'attrib +H "{HIDDEN_FOLDER}"')  # Hide folder
+        os.system(f'attrib +H "{METRICS_FILE}"')  # Hide metrics.json
+
+
+def write_file(file, contents={}):
+    """Must be in json"""
+    hideables(hide=False)
+    with open(file, "w") as w:
+        json.dump(contents, w)
+    hideables(hide=True)
+
+
+def read_file(file):
+    """Must be in json"""
+    hideables(hide=False)
+    with open(file, "r") as r:
+        contents = dict(json.load(r))
+    hideables(hide=True)
+    return contents
 
 
 # --- Main Folders ---
@@ -86,7 +110,7 @@ HIDDEN_FOLDER.mkdir(parents=True, exist_ok=True)
 # --- Files ---
 # Hidden files
 METRICS_FILE = HIDDEN_FOLDER / "metrics.json"  # for freemium model
-LICENSE_KEY_FILE = HIDDEN_FOLDER / "license.key"
+LICENSE_FILE = HIDDEN_FOLDER / "license.json"
 ID_FILE = HIDDEN_FOLDER / "config.json"
 EMAIL_ID_FILE = HIDDEN_FOLDER / "email_config.json"
 
@@ -103,16 +127,143 @@ FB_PATH = NOTES_FOLDER / "feedbacks.json"
 SETTINGS_FILE = NOTES_FOLDER / "settings.json"
 
 
-# --- Freemium specification files functionality ---
-
-# config for unique device id
-USER_APP_ID = get_device_id(ID_FILE)
-
 
 # default counts
 NOTE_COUNT_LIMIT_FALLBACK = 10
 MAX_UPGRADE_REMIND = 1
 UPGRADE_REMINDER_COUNT = 0
+
+
+def hideables(hide=True, file=METRICS_FILE):
+    if not hide:
+        os.system(f'attrib -H "{HIDDEN_FOLDER}"')  # Hide folder
+        os.system(f'attrib -H "{file}"')  # Hide metrics.json
+    else:
+        os.system(f'attrib +H "{HIDDEN_FOLDER}"')  # Hide folder
+        os.system(f'attrib +H "{file}"')  # Hide metrics.json
+
+
+def write_json_file(file, contents={}):
+    """Must be in json"""
+    hideables(hide=False)
+    with open(file, "w") as w:
+        json.dump(contents, w)
+    hideables(hide=True)
+
+
+def read_json_file(file):
+    """Must be in json"""
+    hideables(hide=False)
+    with open(file, "r") as r:
+        contents = dict(json.load(r))
+    hideables(hide=True)
+    return contents
+
+
+def read_txt_file(file):
+    """Must be string"""
+    with open(file, "r") as r:
+        contents = r.read()
+    return contents
+
+
+def write_txt_file(file, contents=""):
+    """Must be string"""
+    with open(file, "r") as w:
+        w.write(contents)
+    return
+
+def get_device_id(config_file):
+    """Returns a persistent unique ID for this device/app install."""
+    if os.path.exists(config_file):
+        try:
+            data = read_json_file(config_file)
+            if "device_id" in data:
+                return data["device_id"]
+        except Exception:
+            pass  # if file corrupted, regenerate
+
+    # Generate new UUID and save it
+    device_id = str(uuid.uuid4())
+    write_json_file(config_file, {"device_id": device_id})
+    return device_id
+
+
+# --- Freemium specification files functionality ---
+
+# This is the unique id for
+# the app on each individual
+# installation of bmtb
+# config for unique device id
+USER_APP_ID = get_device_id(ID_FILE)
+PREMIUM_PRICE = 5000
+
+
+
+def hideables(hide=True, file=METRICS_FILE):
+    if not hide:
+        os.system(f'attrib -H "{HIDDEN_FOLDER}"')  # Hide folder
+        os.system(f'attrib -H "{file}"')  # Hide metrics.json
+    else:
+        os.system(f'attrib +H "{HIDDEN_FOLDER}"')  # Hide folder
+        os.system(f'attrib +H "{file}"')  # Hide metrics.json
+
+
+def write_json_file(file, contents={}):
+    """Must be in json"""
+    hideables(hide=False)
+    with open(file, "w") as w:
+        json.dump(contents, w)
+    hideables(hide=True)
+
+
+def read_json_file(file):
+    """Must be in json"""
+    hideables(hide=False)
+    with open(file, "r") as r:
+        contents = dict(json.load(r))
+    hideables(hide=True)
+    return contents
+
+
+def read_txt_file(file):
+    """Must be string"""
+    with open(file, "r") as r:
+        contents = r.read()
+    return contents
+
+
+def write_txt_file(file, contents=""):
+    """Must be string"""
+    with open(file, "r") as w:
+        w.write(contents)
+    return
+
+def get_device_id(config_file):
+    """Returns a persistent unique ID for this device/app install."""
+    if os.path.exists(config_file):
+        try:
+            data = read_json_file(config_file)
+            if "device_id" in data:
+                return data["device_id"]
+        except Exception:
+            pass  # if file corrupted, regenerate
+
+    # Generate new UUID and save it
+    device_id = str(uuid.uuid4())
+    write_json_file(config_file, {"device_id": device_id})
+    return device_id
+
+
+# --- Freemium specification files functionality ---
+
+# This is the unique id for
+# the app on each individual
+# installation of bmtb
+# config for unique device id
+USER_APP_ID = get_device_id(ID_FILE)
+PREMIUM_PRICE = 5000
+
 
 
 def hideables(hide=True, file=METRICS_FILE):

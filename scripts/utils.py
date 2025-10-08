@@ -25,8 +25,8 @@ import customtkinter as ctk
 import os
 import sqlite3
 import json
-from .constants import NOTES_DB, RECOVERY_FILE, LOGS_FILE, APP_ICON
-from typing import List, Dict, Optional
+from .constants import (NOTES_DB, RECOVERY_FILE, LOGS_FILE, APP_ICON)
+from typing import (List, Dict, Optional)
 import winreg
 
 import winreg
@@ -93,6 +93,7 @@ def create_table() -> None:
         )
         conn.commit()
 
+
 def add_note(title: str, content: str) -> int:
     """Insert a new note. Returns the new note id."""
     with get_connection() as conn:
@@ -103,6 +104,7 @@ def add_note(title: str, content: str) -> int:
         nid = c.lastrowid
         conn.commit()
     return nid  # type: ignore
+
 
 def update_note(note_id: int, title: str, content: str) -> None:
     """Update an existing note.
@@ -191,10 +193,12 @@ def migrate_from_json(json_path: str = "notes.json") -> int:
 
     return count
 
+
 def set_recovery_key(code: str):
     hashed = hashlib.sha256(code.encode('utf-8')).hexdigest()
     with open(RECOVERY_FILE, 'w') as f:
         f.write(hashed)
+
 
 def verify_recovery_key(code: str) -> bool:
     if not os.path.exists(RECOVERY_FILE):
@@ -203,6 +207,58 @@ def verify_recovery_key(code: str) -> bool:
     with open(RECOVERY_FILE, 'r') as f:
         stored_hash = f.readline().strip()
     return entered_hash == stored_hash
+
+
+def _center_window(w, parent=None):
+    """Center any window `w`"""
+    w.update_idletasks()  # Actualize geometry information
+    w.update()
+
+    minwidth = w.winfo_reqwidth()
+    minheight = w.winfo_reqheight()
+    maxwidth = w.winfo_vrootwidth()
+    maxheight = w.winfo_vrootheight()
+    if parent is not None and parent.winfo_ismapped():
+        x = parent.winfo_rootx() + (parent.winfo_width() - minwidth) // 2
+        y = parent.winfo_rooty() + (parent.winfo_height() - minheight) // 2
+        vrootx = w.winfo_vrootx()
+        vrooty = w.winfo_vrooty()
+        x = min(x, vrootx + maxwidth - minwidth)
+        x = max(x, vrootx)
+        y = min(y, vrooty + maxheight - minheight)
+        y = max(y, vrooty)
+        if w._windowingsystem == 'aqua':
+            # Avoid the native menu bar which sits on top of everything.
+            y = max(y, 22)
+    else:
+        x = (w.winfo_screenwidth() - minwidth) // 2
+        y = (w.winfo_screenheight() - minheight) // 2
+
+    w.wm_maxsize(maxwidth, maxheight)
+    w.wm_geometry(f'+{x}+{y}')
+    w.wm_deiconify()  # Become visible at the desired location
+
+
+def center_window(w, offsetx=0, offsety=0):
+    """Center any CTk/Tk window on the screen."""
+    w.update_idletasks()  # Ensure geometry info is accurate
+
+    # Get actual window size
+    width = w.winfo_reqwidth()
+    height = w.winfo_reqheight()
+
+    # Fallback if width/height not yet drawn
+    if width == 1 and height == 1:
+        width = w.winfo_reqwidth()
+        height = w.winfo_reqheight()
+
+    # Calculate center coordinates
+    x = (w.winfo_screenwidth() - width) // 2
+    y = (w.winfo_screenheight() - height) // 2
+
+    # Move window to center without resizing it
+    w.geometry(f'+{x+offsetx}+{y+offsety}')
+
 
 def askstring(title="Input", prompt="Enter value:", show=None, placeholder="", width=300, height=150):
     """Universal CTk askstring dialog. Returns str or None."""
@@ -217,10 +273,12 @@ def askstring(title="Input", prompt="Enter value:", show=None, placeholder="", w
     dialog.winfo_toplevel().geometry(f"{width}x{height}")
     dialog.wm_iconbitmap(APP_ICON)
     dialog.transient(root)   # Tie dialog to root (only on top of it)
-    dialog.grab_set()        # Keep it modal (block other app windows)
-
+    try:
+        dialog.grab_set()
+    except Exception:
+        pass
     # Prompt
-    label = ctk.CTkLabel(dialog, text=prompt,wraplength=300)
+    label = ctk.CTkLabel(dialog, text=prompt, wraplength=300)
     label.pack(pady=(15, 5))
 
     # Entry
@@ -261,9 +319,11 @@ def askstring(title="Input", prompt="Enter value:", show=None, placeholder="", w
 
     return result["value"]
 
+
 def count_words_in_string(text):
     words = re.findall(r'\b\w+\b', text)
     return len(words)
+
 
 def has_internet():
     try:

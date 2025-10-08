@@ -19,3 +19,4 @@ ac.py
 *.info
 *.pem
 *.key
+.vscode
