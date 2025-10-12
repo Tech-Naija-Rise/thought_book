@@ -1,6 +1,7 @@
 # constants.py
 import os
 import json
+import subprocess
 import uuid
 import logging
 from pathlib import Path
@@ -45,8 +46,6 @@ def resource_path(relative_path: Path) -> Path:
     return base_path / relative_path
 
 
-
-
 # --- Main Folders ---
 MAIN_FOLDER = Path(__file__).resolve().parent.parent
 
@@ -67,54 +66,66 @@ HIDDEN_FOLDER.mkdir(parents=True, exist_ok=True)
 
 # --- Files ---
 # Hidden files
-METRICS_FILE = HIDDEN_FOLDER / "metrics.json"  # for freemium model
 LICENSE_FILE = HIDDEN_FOLDER / "license.json"
 ID_FILE = HIDDEN_FOLDER / "config.json"
 EMAIL_ID_FILE = HIDDEN_FOLDER / "email_config.json"
 
 # For updates system
-DEPLOY_INFO_PATH = NOTES_FOLDER / "deploy.info"
+DEPLOY_INFO_PATH = HIDDEN_FOLDER / "deploy.info"
 UPDATE_INFO_URL = "https://tech-naija-rise.github.io/thought_book/update.json"
 
 
 NOTES_DB = NOTES_FOLDER / "BMTbnotes.db"
 RECOVERY_FILE = NOTES_FOLDER / "recovery.key"
 PASS_FILE = NOTES_FOLDER / "pass.pass"
-LOGS_FILE = NOTES_FOLDER / "app.log"
 FB_PATH = NOTES_FOLDER / "feedbacks.json"
 SETTINGS_FILE = NOTES_FOLDER / "settings.json"
+LOGS_FILE = NOTES_FOLDER / "app.log"
 
 
+# --- Logging ---
+logging.basicConfig(
+    filename=LOGS_FILE,
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
 
-# default counts
-NOTE_COUNT_LIMIT_FALLBACK = 10
-MAX_UPGRADE_REMIND = 1
-UPGRADE_REMINDER_COUNT = 0
 
-def hideables(hide=True, file=METRICS_FILE):
-    if not hide:
-        os.system(f'attrib -H "{HIDDEN_FOLDER}"')  # Hide folder
-        os.system(f'attrib -H "{file}"')  # Hide metrics.json
-    else:
-        os.system(f'attrib +H "{HIDDEN_FOLDER}"')  # Hide folder
-        os.system(f'attrib +H "{file}"')  # Hide metrics.json
+def hideables(file=None, hide=True):
+    try:
+        if not hide:
+            os.system(f'attrib -H "{HIDDEN_FOLDER}"')  # Hide folder
+            os.system(f'attrib -H "{file}"')  # Hide metrics.json
+        else:
+            os.system(f'attrib +H "{HIDDEN_FOLDER}"')  # Hide folder
+            os.system(f'attrib +H "{file}"')  # Hide metrics.json
+    except Exception as e:
+        logging.error(f"{e}")
 
 
 def write_json_file(file, contents={}):
     """Must be in json"""
-    hideables(hide=False)
-    with open(file, "w") as w:
-        json.dump(contents, w)
-    hideables(hide=True)
+    try:
+        hideables(file=file, hide=False)
+        with open(file, "w") as w:
+            json.dump(contents, w)
+        hideables(file=file, hide=True)
+    except Exception as e:
+        logging.error(e)
 
 
 def read_json_file(file):
     """Must be in json"""
-    hideables(hide=False)
-    with open(file, "r") as r:
-        contents = dict(json.load(r))
-    hideables(hide=True)
-    return contents
+    try:
+        hideables(file, hide=False)
+        with open(file, "r") as r:
+            contents = dict(json.load(r))
+        hideables(file, hide=True)  
+        return contents 
+    except Exception as e:
+        logging.error(e)
+        raise e
+
 
 
 def read_txt_file(file):
@@ -130,6 +141,7 @@ def write_txt_file(file, contents=""):
         w.write(contents)
     return
 
+
 def get_device_id(config_file):
     """Returns a persistent unique ID for this device/app install."""
     if os.path.exists(config_file):
@@ -137,7 +149,7 @@ def get_device_id(config_file):
             data = read_json_file(config_file)
             if "device_id" in data:
                 return data["device_id"]
-        except Exception:
+        except Exception as e:
             pass  # if file corrupted, regenerate
 
     # Generate new UUID and save it
@@ -152,7 +164,7 @@ def get_device_id(config_file):
 # the app on each individual
 # installation of bmtb
 # config for unique device id
-USER_APP_ID = get_device_id(ID_FILE)
+
 PREMIUM_PRICE = 5000
 
 
@@ -161,30 +173,11 @@ if DEPLOY_INFO_PATH.exists():
     deploy_info = read_json_file(DEPLOY_INFO_PATH)
     APP_VERSION = deploy_info.get("APP_VERSION", APP_VERSION)
 
-# METRICS
-METRICS_FILE_CONTENT = {
-    "note_count_limit": NOTE_COUNT_LIMIT_FALLBACK,
-    "max_upgrade_remind": MAX_UPGRADE_REMIND,
-    "upgrade_reminder_count": UPGRADE_REMINDER_COUNT}
-
-if not os.path.exists(METRICS_FILE):
-    # Put defaults since it is not complete
-    write_json_file(METRICS_FILE, METRICS_FILE_CONTENT)
-else:
-    METRICS_FILE_CONTENT = read_json_file(METRICS_FILE)
-
 
 # AutoUpdater
 UPDATE_DOWNLOAD_FOLDER = os.path.join(
     os.path.expanduser("~"), f"{APP_SHORT_NAME}_updates")
 
-
-# --- Logging ---
-logging.basicConfig(
-    filename=LOGS_FILE,
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
 
 # --- External Links ---
 BMA_DOWNLOAD_LINK = "https://github.com/Mahmudumar/BMA/releases/latest"
@@ -196,4 +189,5 @@ TNR_BMTB_SERVER = "https://feedback-server-tnr.onrender.com"
 if __name__ == "__main__":
     print(f"Main folder: {MAIN_FOLDER}")
     print(f"Data folder: {DATA_FOLDER}")
+    print(f"Device ID: {get_device_id(ID_FILE)}")
     print(f"App version: {APP_VERSION}")

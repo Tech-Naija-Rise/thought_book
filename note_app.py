@@ -37,16 +37,15 @@ class NotesApp(ctk.CTk):
         except Exception as e:
             logging.error(f"Error while creating table: {e}")
 
-        # Security
-        self.cipher = SimpleCipher()
-        self.encrypt = self.cipher.encrypt
-        self.decrypt = self.cipher.decrypt
+        self.init_settings()
+        self.init_managers()
+        self.start_ui()
 
-        # Settings + Password
-        self.password = None
-        self.password_file = PASS_FILE
-        self.password_manager = PasswordManager(self)
-
+        self.current_note = ""
+        self.autosave_after_id = None
+        
+    # --- Managers and settings ---
+    def init_settings(self):
         settings = load_settings()
         self.locked = settings.get("request_password", False)
         if self.locked:
@@ -58,22 +57,26 @@ class NotesApp(ctk.CTk):
                     sys.exit()
                 else:
                     tkmsg.showerror("Error", "Incorrect password. Try again.")
+        self.focused = ctk.BooleanVar(value=False)
+
+    def init_managers(self):
+        # Security
+        self.cipher = SimpleCipher()
+        self.encrypt = self.cipher.encrypt
+        self.decrypt = self.cipher.decrypt
+
+        # Settings + Password
+        self.password = None
+        self.password_file = PASS_FILE
+        self.password_manager = PasswordManager(self)
 
         # License Management
         self.license_manager = LicenseManager(self)
-
-        # Draw the UI of the application
-        self.current_note = ""
-        self.autosave_after_id = None
-        self.focused = ctk.BooleanVar(value=False)
-        self.start_ui()
 
         self.updater = AutoUpdater(self, False)
         logging.info(f"Current Version: {APP_VERSION}")
         # check after startup delay
         self.after(2000, self.updater.check_update_background)
-
-    # --- License-based methods ---
 
     # --- UI-based methods ---
 
@@ -82,8 +85,7 @@ class NotesApp(ctk.CTk):
         if self.locked:
             return
 
-        self.title(APP_NAME)
-        self.geometry("900x500")
+        self.wm_title(APP_NAME)
         self.wm_iconbitmap(APP_ICON)
 
         self.notes = self.load_notes()
@@ -127,7 +129,6 @@ class NotesApp(ctk.CTk):
         focus_btn.pack(side="right")
 
         self.note_buttons = []
-        self.refresh_list()
 
         # Editor
         self.right_side = ctk.CTkFrame(self, height=300)
@@ -351,7 +352,7 @@ class NotesApp(ctk.CTk):
 def main():
     ctk.set_appearance_mode("dark")
     app = NotesApp()
-    center_window(app)
+    center_window(app,900,500)
     app.mainloop()
 
 

@@ -239,10 +239,10 @@ def _center_window(w, parent=None):
     w.wm_deiconify()  # Become visible at the desired location
 
 
-def center_window(w, offsetx=0, offsety=0):
+def center_window(w:ctk.CTk|ctk.CTkToplevel,wdth,hght, offsetx=0, offsety=0):
     """Center any CTk/Tk window on the screen."""
     w.update_idletasks()  # Ensure geometry info is accurate
-
+    w.wm_withdraw()
     # Get actual window size
     width = w.winfo_reqwidth()
     height = w.winfo_reqheight()
@@ -257,8 +257,8 @@ def center_window(w, offsetx=0, offsety=0):
     y = (w.winfo_screenheight() - height) // 2
 
     # Move window to center without resizing it
-    w.geometry(f'+{x+offsetx}+{y+offsety}')
-
+    w.geometry(f'{wdth}x{hght}+{x+offsetx}+{y+offsety}')
+    w.wm_deiconify()
 
 def askstring(title="Input", prompt="Enter value:", show=None, placeholder="", width=300, height=150):
     """Universal CTk askstring dialog. Returns str or None."""

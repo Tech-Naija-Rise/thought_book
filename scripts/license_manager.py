@@ -17,11 +17,11 @@ import requests
 from scripts.constants import (EMAIL_ID_FILE, LICENSE_FILE,
                                TNR_BMTB_SERVER,  logging,
                                APP_ICON, APP_NAME, read_json_file,
-                               PUBLIC_KEY, write_json_file,
-                               USER_APP_ID, PREMIUM_PRICE)
+                               get_device_id, ID_FILE, PUBLIC_KEY, write_json_file,
+                               PREMIUM_PRICE)
 from scripts.utils import askstring, center_window
 
-
+USER_APP_ID = get_device_id(ID_FILE)
 class LicenseManager:
     def __init__(self, master) -> None:
         """Managing all license related things. 
@@ -130,14 +130,14 @@ class LicenseManager:
         """Display modal license entry window"""
         self.license_window = ctk.CTkToplevel(master)
         self.license_window.title(f"Activate {APP_NAME}")
-        self.license_window.geometry("500x480")
+        # self.license_window.geometry("500x480")
         try:
             self.license_window.grab_set()
         except Exception:
             pass
         self.license_window.resizable(False, True)
         self.license_window.iconbitmap(APP_ICON)
-        center_window(self.license_window, offsety=-150)
+        center_window(self.license_window, 500, 470, offsety=-150)
 
         instructions = ctk.CTkLabel(
             self.license_window,
@@ -148,7 +148,7 @@ class LicenseManager:
                 "• Premium features\n"
                 "• A smoother, distraction-free experience\n\n"
                 "To activate, please paste:\n"
-                
+
                 "• Your License Key\n\n"
                 "If you don’t have a license yet, click below to purchase one."
             ),

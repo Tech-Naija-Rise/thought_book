@@ -201,7 +201,7 @@ def build_exe(script_path="note_app.py", d_i=deploy_info):
     exe_dir.mkdir(exist_ok=True)
     cmd = f'pyinstaller --noconfirm -i "{APP_ICON}"'
     cmd += f' --add-data "{APP_ICON};imgs" -n "{APP_FULLNAME}"'
-    cmd += f' --noconsole --onefile "{script_path}"'
+    cmd += f' --hide-console hide-early --onefile "{script_path}"'
     print(cmd)
     os.system(cmd)
     for item in ["build", "__pycache__", f"{APP_FULLNAME}.spec"]:
@@ -261,8 +261,11 @@ def main():
     else:
         print("Installer not found! Probably already moved or build failed.")
 
-    write_json_file(DEPLOY_INFO_PATH, deploy_info)
 
 
 if __name__ == "__main__":
     main()
+    write_json_file(DEPLOY_INFO_PATH, deploy_info)
+
+    # optionally modify the constants.py file after everydeploy
+    # with the current deploy.
