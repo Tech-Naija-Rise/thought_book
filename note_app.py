@@ -9,7 +9,7 @@ with license key verification using RSA public key cryptography.
 from scripts.password_manager import (PasswordManager, SimpleCipher,)
 from scripts.constants import (APP_NAME,
                                APP_ICON, APP_VERSION,
-                               NOTES_DB,
+
                                PASS_FILE,
                                logging,)
 
@@ -20,7 +20,6 @@ from scripts.utils import (center_window, create_table,
 from scripts.settings import (SettingsWindow, load_settings)
 from scripts.license_manager import LicenseManager
 from scripts.auto_updater import AutoUpdater
-import os
 import sys
 import customtkinter as ctk
 from tkinter import messagebox as tkmsg
@@ -43,7 +42,7 @@ class NotesApp(ctk.CTk):
 
         self.current_note = ""
         self.autosave_after_id = None
-        
+
     # --- Managers and settings ---
     def init_settings(self):
         settings = load_settings()
@@ -74,7 +73,7 @@ class NotesApp(ctk.CTk):
         self.license_manager = LicenseManager(self)
 
         # App Update Management
-        self.updater = AutoUpdater(self, True) # will just auto install
+        self.updater = AutoUpdater(self, True)  # will just auto install
         logging.info(f"Current Version: {APP_VERSION}")
         # check after startup delay
         self.after(2000, self.updater.check_update_background)
@@ -165,6 +164,7 @@ class NotesApp(ctk.CTk):
             self.add_note()
         else:
             self.load_note(0)
+        self.after(1000, self.refresh_list)
 
     def schedule_autosave(self):
         """Schedule an autosave after a short delay to reduce excessive writes."""
@@ -215,6 +215,7 @@ class NotesApp(ctk.CTk):
     def add_note(self):
         """Create a new note, save current, and enforce freemium limits."""
         MAX_FREEMIUM_NOTES = 5
+        #
 
         # --- Mandatory Security Check ---
         if not self.license_manager.is_premium_user()\
@@ -353,7 +354,7 @@ class NotesApp(ctk.CTk):
 def main():
     ctk.set_appearance_mode("dark")
     app = NotesApp()
-    center_window(app,900,500)
+    center_window(app, 900, 500)
     app.mainloop()
 
 

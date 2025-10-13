@@ -11,7 +11,6 @@ class PasswordManager:
         self.cipher = self.master.cipher
         self.password_file = self.master.password_file
 
-
     def forgot_password(self):
         """Handle password recovery via recovery code input."""
         code = askstring(

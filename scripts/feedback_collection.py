@@ -22,10 +22,11 @@ import requests
 
 from .constants import (logging,
                         FB_PATH, LOGS_FILE,
-                        tkmsg, APP_NAME,
+                        APP_NAME,
                         BMTB_FEEDBACK_SERVER,
                         APP_ICON)
 from .utils import has_internet
+import tkinter.messagebox as tkmsg
 
 
 class FeedbackAPI:
@@ -38,7 +39,6 @@ class FeedbackAPI:
         get online so that the feedback can be sent.
         """
         self.parent = parent
-        
 
         # Automatically check for internet in the background
         # and send feedback if there is any saved
@@ -222,12 +222,12 @@ class FeedbackAPI:
                     tkmsg.showinfo("Feedback sent",
                                    "Thank you for your feedback!")
                     self.on_close()
-                elif s == None:
+                elif s is None:
                     self.helper.configure(
                         text="There's a problem on our end. "
                         "Will retry later.",
                         text_color="#ff2525")
-                    logging.error(f"Server error, will save feedback locally.")
+                    logging.error("Server error, will save feedback locally.")
 
                     self.save_locally()
 
@@ -259,8 +259,8 @@ class FeedbackAPI:
         self.window.after(500, self.window.destroy)
 
     def save_locally(self, data={}):
-        """Append the latest feedback to the end of 
-        the list then save it in a json
+        """Append the latest feedback to 
+        the end of the list then save it in a json
 
         Best way is to read the contents, then append and rewrite
         """
@@ -321,7 +321,7 @@ class FeedbackAPI:
                         if s:
                             logging.info("Sent feedback successfully")
                             self.clear_saved()
-                        elif s == None:
+                        elif s is None:
                             logging.error(
                                 "Failed to connect to server."
                             )

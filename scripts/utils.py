@@ -20,25 +20,14 @@ Notes: this module expects the caller to handle encryption/decryption of `conten
 import requests
 import re
 import hashlib
-import string
 import customtkinter as ctk
 import os
 import sqlite3
 import json
-from .constants import (NOTES_DB, RECOVERY_FILE, LOGS_FILE, APP_ICON)
+from .constants import (NOTES_DB, RECOVERY_FILE, logging, APP_ICON)
 from typing import (List, Dict, Optional)
 import winreg
-
-import winreg
-import logging
-# setup logging once (top-level of your file, before class)
-logging.basicConfig(
-    filename=LOGS_FILE,
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-
-)
-
+# import tkinter.messagebox as tkmsg
 
 def set_user_env_var(name, value):
     reg_path = r"Environment"
@@ -78,20 +67,30 @@ def create_table() -> None:
       - created_at
       - updated_at
     """
-    with get_connection() as conn:
-        c = conn.cursor()
-        c.execute(
-            """
-            CREATE TABLE IF NOT EXISTS notes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            content TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-            """
-        )
-        conn.commit()
+    if os.path.exists(NOTES_DB) and\
+            os.path.getsize(NOTES_DB) > 10_000_000:
+        logging.warning(
+            "Warning: Notes database is very large and may slow startup.")
+    try:
+        with get_connection() as conn:
+            c = conn.cursor()
+            c.execute(
+                """
+                CREATE TABLE IF NOT EXISTS notes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                """
+            )
+            conn.commit()
+    except sqlite3.DatabaseError:
+        logging.error(
+            "Database is corrupted."
+            " Please restore from backup or"
+            " delete the file.")
 
 
 def add_note(title: str, content: str) -> int:
@@ -99,7 +98,8 @@ def add_note(title: str, content: str) -> int:
     with get_connection() as conn:
         c = conn.cursor()
         c.execute(
-            "INSERT INTO notes (title, content) VALUES (?, ?)", (title, content)
+            "INSERT INTO notes (title, content) VALUES (?, ?)",
+            (title, content)
         )
         nid = c.lastrowid
         conn.commit()
@@ -143,7 +143,9 @@ def get_notes() -> List[Dict]:
     with get_connection() as conn:
         c = conn.cursor()
         c.execute(
-            "SELECT id, title, content, created_at, updated_at FROM notes ORDER BY updated_at DESC"
+            "SELECT id, title, content, created_at,"
+            " updated_at FROM notes ORDER BY updated_at"
+            " DESC"
         )
         rows = c.fetchall()
 
@@ -239,7 +241,7 @@ def _center_window(w, parent=None):
     w.wm_deiconify()  # Become visible at the desired location
 
 
-def center_window(w:ctk.CTk|ctk.CTkToplevel,wdth,hght, offsetx=0, offsety=0):
+def center_window(w: ctk.CTk | ctk.CTkToplevel, wdth, hght, offsetx=0, offsety=0):
     """Center any CTk/Tk window on the screen."""
     w.update_idletasks()  # Ensure geometry info is accurate
     w.wm_withdraw()
@@ -259,6 +261,7 @@ def center_window(w:ctk.CTk|ctk.CTkToplevel,wdth,hght, offsetx=0, offsety=0):
     # Move window to center without resizing it
     w.geometry(f'{wdth}x{hght}+{x+offsetx}+{y+offsety}')
     w.wm_deiconify()
+
 
 def askstring(title="Input", prompt="Enter value:", show=None, placeholder="", width=300, height=150):
     """Universal CTk askstring dialog. Returns str or None."""
@@ -329,7 +332,7 @@ def has_internet():
     try:
         requests.get("https://www.google.com", timeout=3)
         return True
-    except:
+    except Exception:
         return False
 
 

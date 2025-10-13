@@ -1,12 +1,11 @@
 # constants.py
+from logging.handlers import RotatingFileHandler
 import os
 import json
-import subprocess
 import uuid
 import logging
 from pathlib import Path
 import sys
-import tkinter.messagebox as tkmsg
 
 __all__ = [
     "NOTES_DB", "NOTES_FOLDER",
@@ -55,13 +54,17 @@ IMGS_FOLDER = MAIN_FOLDER / "imgs"
 APP_ICON = resource_path(IMGS_FOLDER / "logo.ico")
 APP_PHOTO = IMGS_FOLDER / "logo.png"
 
+
 # --- Data Storage (always under %APPDATA%/BM) ---
 DATA_FOLDER = Path(os.getenv("APPDATA", "")) / "BM"
 NOTES_FOLDER = DATA_FOLDER / APP_NAME
-NOTES_FOLDER.mkdir(parents=True, exist_ok=True)
+# Only create folders if they do not exist (avoid unnecessary disk operations)
+if not NOTES_FOLDER.exists():
+    NOTES_FOLDER.mkdir(parents=True)
 
 HIDDEN_FOLDER = NOTES_FOLDER / f".{APP_SHORT_NAME}"
-HIDDEN_FOLDER.mkdir(parents=True, exist_ok=True)
+if not HIDDEN_FOLDER.exists():
+    HIDDEN_FOLDER.mkdir(parents=True)
 
 
 # --- Files ---
@@ -84,10 +87,12 @@ LOGS_FILE = NOTES_FOLDER / "app.log"
 
 
 # --- Logging ---
+# Use RotatingFileHandler to prevent slow startup from large log files
+handler = RotatingFileHandler(LOGS_FILE, maxBytes=1_000_000, backupCount=3)
 logging.basicConfig(
-    filename=LOGS_FILE,
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[handler]
 )
 
 
@@ -120,12 +125,11 @@ def read_json_file(file):
         hideables(file, hide=False)
         with open(file, "r") as r:
             contents = dict(json.load(r))
-        hideables(file, hide=True)  
-        return contents 
+        hideables(file, hide=True)
+        return contents
     except Exception as e:
         logging.error(e)
         raise e
-
 
 
 def read_txt_file(file):
@@ -149,7 +153,7 @@ def get_device_id(config_file):
             data = read_json_file(config_file)
             if "device_id" in data:
                 return data["device_id"]
-        except Exception as e:
+        except Exception:
             pass  # if file corrupted, regenerate
 
     # Generate new UUID and save it

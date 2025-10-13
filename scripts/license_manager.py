@@ -17,7 +17,9 @@ import requests
 from scripts.constants import (EMAIL_ID_FILE, LICENSE_FILE,
                                TNR_BMTB_SERVER,  logging,
                                APP_ICON, APP_NAME, read_json_file,
-                               get_device_id, ID_FILE, PUBLIC_KEY, write_json_file,
+                               get_device_id, 
+                               ID_FILE, PUBLIC_KEY,
+                                 write_json_file,
                                PREMIUM_PRICE)
 from scripts.utils import askstring, center_window
 

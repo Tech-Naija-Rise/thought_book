@@ -1,6 +1,5 @@
 import requests
 import os
-import sys
 import subprocess
 import threading
 
@@ -13,6 +12,7 @@ from .constants import (logging, APP_VERSION,
                         APP_NAME, APP_SHORT_NAME,
                         UPDATE_DOWNLOAD_FOLDER,
                         UPDATE_INFO_URL)
+
 
 class AutoUpdater:
     def __init__(self, parent, auto_install=False):
@@ -46,7 +46,8 @@ class AutoUpdater:
 
     def prompt_update(self, latest_version, notes, url):
         """Ask user for update, non-blocking."""
-        msg = f"{APP_NAME} v{latest_version} is available.\nDo you want to update now?"
+        msg = f"{APP_NAME} v{latest_version} is "
+        "available.\nDo you want to update now?"
         if messagebox.askyesno(f"{APP_SHORT_NAME} Update", msg):
             self.download_and_install(url)
 
