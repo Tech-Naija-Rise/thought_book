@@ -140,7 +140,7 @@ class FeedbackAPI:
             try:
                 with open(log_path, "r") as lf:
                     lines = lf.readlines()
-                    return "".join(lines[-3:])  # Return last 5 lines
+                    return "".join(lines[-10:])  # Return last 5 lines
             except Exception as e:
                 logging.error(f"Error reading log file: {e}")
                 return "Could not read log file."
