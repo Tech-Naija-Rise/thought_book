@@ -73,7 +73,8 @@ class NotesApp(ctk.CTk):
         # License Management
         self.license_manager = LicenseManager(self)
 
-        self.updater = AutoUpdater(self, False)
+        # App Update Management
+        self.updater = AutoUpdater(self, True) # will just auto install
         logging.info(f"Current Version: {APP_VERSION}")
         # check after startup delay
         self.after(2000, self.updater.check_update_background)
