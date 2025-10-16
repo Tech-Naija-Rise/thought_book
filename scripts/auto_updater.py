@@ -6,7 +6,7 @@ import threading
 from packaging import version
 
 import customtkinter as ctk
-from tkinter import messagebox
+from tkinter import messagebox as tkmsg
 
 from .constants import (logging, APP_VERSION,
                         APP_NAME, APP_SHORT_NAME,
@@ -15,14 +15,19 @@ from .constants import (logging, APP_VERSION,
 
 
 class AutoUpdater:
-    def __init__(self, parent, auto_install=False):
+    def __init__(self, parent, auto_install=True):
         self.parent = parent
         self.auto_install = auto_install
         os.makedirs(UPDATE_DOWNLOAD_FOLDER, exist_ok=True)
 
     def check_update_background(self):
-        """Run version check in background thread."""
+        """Run version check in background thread
+          SILENTLY by default."""
         threading.Thread(target=self._check, daemon=True).start()
+
+    def check_update_and_prompt(self):
+        self.auto_install = False  # prompt before starting update
+        self.check_update_background()
 
     def _check(self):
         try:
@@ -40,6 +45,11 @@ class AutoUpdater:
                     self.download_and_install(url)
                 else:
                     self.prompt_update(latest_version, notes, url)
+            else:
+                logging.info("Software up to date")
+                if not self.auto_install:
+                    tkmsg.showinfo(f"Your {APP_NAME} is up to date")
+                
         except Exception as e:
             # Silent fail for background updates
             logging.error(f"Update check failed: {e}")
@@ -48,7 +58,7 @@ class AutoUpdater:
         """Ask user for update, non-blocking."""
         msg = f"{APP_NAME} v{latest_version} is "
         "available.\nDo you want to update now?"
-        if messagebox.askyesno(f"{APP_SHORT_NAME} Update", msg):
+        if tkmsg.askyesno(f"{APP_SHORT_NAME} Update", msg):
             self.download_and_install(url)
 
     def download_and_install(self, url, show_progress=False):
@@ -92,5 +102,5 @@ class AutoUpdater:
         except Exception as e:
             logging.error(f"Update failed: '{e}'")
             if show_progress or self.auto_install:
-                messagebox.showerror(
+                tkmsg.showerror(
                     f"{APP_SHORT_NAME} Update", f"Update failed:\n'{e}'")

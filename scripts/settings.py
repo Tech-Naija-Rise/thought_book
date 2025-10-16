@@ -8,10 +8,11 @@ import json
 from scripts.constants import (
     APP_NAME, PASS_FILE, APP_ICON, SETTINGS_FILE,
     TNR_BMTB_SERVER
-    )
+)
 from scripts.utils import askstring, clear_all_notes
 from scripts.feedback_collection import FeedbackAPI
 from scripts.license_manager import LicenseManager
+from scripts.auto_updater import AutoUpdater
 
 
 def load_settings():
@@ -42,6 +43,7 @@ class SettingsWindow(ctk.CTkToplevel):
         self.settings = load_settings()
         self.feedback_manager = FeedbackAPI(self)
         self.license_manager = LicenseManager(self)
+        self.updater = AutoUpdater(self, False)
 
         # --- Theme palette ---
         self.colors = {
@@ -117,6 +119,12 @@ class SettingsWindow(ctk.CTkToplevel):
         purchase_bt.pack(anchor="w", padx=10, pady=5)
         if self.license_manager.is_premium_user():
             purchase_bt.config(state="disabled")
+            
+        update_bt = tk.Button(fb_frame,
+                                text=f"Check for Updates",
+                                command=self.check_updates,
+                                **self.styles["button"])
+        update_bt.pack(anchor="w", padx=10, pady=5)
 
         # Bottom buttons
         btn_frame = tk.Frame(self, bg=self.colors["bg"])
@@ -164,6 +172,9 @@ class SettingsWindow(ctk.CTkToplevel):
 
     def start_license(self, event=None):
         self.license_manager._show_license_window(self.parent)
+
+    def check_updates(self, event=None):
+        self.updater.check_update_and_prompt()
 
     def confirm_clear_all(self):
         answer = askstring(

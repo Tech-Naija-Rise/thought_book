@@ -169,7 +169,7 @@ def get_device_id(config_file):
 # installation of bmtb
 # config for unique device id
 
-PREMIUM_PRICE = 5000
+PREMIUM_PRICE = 10_000
 
 
 # --- Load version if in deploy.info ---

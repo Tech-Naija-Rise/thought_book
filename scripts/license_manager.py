@@ -17,13 +17,16 @@ import requests
 from scripts.constants import (EMAIL_ID_FILE, LICENSE_FILE,
                                TNR_BMTB_SERVER,  logging,
                                APP_ICON, APP_NAME, read_json_file,
-                               get_device_id, 
+                               get_device_id,
                                ID_FILE, PUBLIC_KEY,
-                                 write_json_file,
+                               write_json_file,
                                PREMIUM_PRICE)
-from scripts.utils import askstring, center_window
+
+from scripts.utils import askstring, center_window, connected_to_server
 
 USER_APP_ID = get_device_id(ID_FILE)
+
+
 class LicenseManager:
     def __init__(self, master) -> None:
         """Managing all license related things. 
@@ -40,6 +43,16 @@ class LicenseManager:
         self.license_key = None
 
         self.load_and_validate_license()
+
+        # Wake up our server
+        try:
+            connected_to_server(TNR_BMTB_SERVER+"/ping")
+        except Exception as e:
+            logging.error(
+                "While waking up server, something"
+                f" Happened: {e}")
+        # Even if there's an error,
+        # This would wake it up.
 
     def load_and_validate_license(self):
         if not os.path.exists(self.license_file):
@@ -147,7 +160,7 @@ class LicenseManager:
                 f"Welcome to {APP_NAME}!\n\n"
                 "You are currently using the free version.\n\n"
                 "Unlock the full version to enjoy:\n"
-                "• Premium features\n"
+                "• Premium features: Unlimited Notes\n"
                 "• A smoother, distraction-free experience\n\n"
                 "To activate, please paste:\n"
 
@@ -161,8 +174,8 @@ class LicenseManager:
         instructions.pack(pady=(10, 0), padx=10, anchor="w")
 
         link_label = ctk.CTkLabel(
-            self.license_window, text="purchase license",
-            text_color="#5f9de4",
+            self.license_window, text="Purchase License",
+            text_color="#6b9eda",
             cursor="hand2", justify="left"
         )
         link_label.pack(pady=(0, 10), padx=10, anchor="w")
@@ -210,8 +223,10 @@ class LicenseManager:
 
         if not os.path.exists(EMAIL_ID_FILE):
             while True:
-                email = askstring("Email Required",
-                                  "Enter your email (required for payment):")
+                email = askstring("Email Required for payment",
+                                  "Enter your email (required for payment).\n\n"
+                                  " We'll save it on your computer\n"
+                                  "so you never have to type it again:",height=210)
                 if not email:
                     continue  # prompt again if empty
                 elif email == "exit":
@@ -243,9 +258,13 @@ class LicenseManager:
                 # given to you
                 resp = requests.post(
                     f"{TNR_BMTB_SERVER}/payment",
+                    # Here, we have to control
+                    # the price from us not from the
+                    # app
                     json={"amount": PREMIUM_PRICE,
                           "email": self.user_email,
                           "device_id": USER_APP_ID})
+
                 reference = str(resp.json()["data"]["reference"])
             except Exception as e:
                 logging.error(
