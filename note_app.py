@@ -164,7 +164,7 @@ class NotesApp(ctk.CTk):
             self.add_note()
         else:
             self.load_note(0)
-        self.after(1000, self.refresh_list)
+        self.after(400, self.refresh_list)
 
     def schedule_autosave(self):
         """Schedule an autosave after a short delay to reduce excessive writes."""
