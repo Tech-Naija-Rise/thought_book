@@ -1,4 +1,4 @@
-INSTALLER_TEMPLATE = """
+INSTALLER_TEMPLATE = r"""
 !include "MUI2.nsh"
 !include "nsDialogs.nsh"
 
