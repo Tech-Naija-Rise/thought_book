@@ -49,15 +49,15 @@ class AutoUpdater:
                 logging.info("Software up to date")
                 if not self.auto_install:
                     tkmsg.showinfo(f"Your {APP_NAME} is up to date")
-                
+
         except Exception as e:
             # Silent fail for background updates
             logging.error(f"Update check failed: {e}")
 
     def prompt_update(self, latest_version, notes, url):
         """Ask user for update, non-blocking."""
-        msg = f"{APP_NAME} v{latest_version} is "
-        "available.\nDo you want to update now?"
+        msg = (f"{APP_NAME} v{latest_version} is "
+               "available.\nDo you want to update now?")
         if tkmsg.askyesno(f"{APP_SHORT_NAME} Update", msg):
             self.download_and_install(url)
 
@@ -98,7 +98,11 @@ class AutoUpdater:
             # Run installer
             logging.info(f"Finished installation: '{filename}'")
             subprocess.Popen([filename, "/S"], shell=True)
-            self.parent.destroy()  # Close app to allow installer
+            # self.parent.destroy()  # Close app to allow installer
+            tkmsg.showinfo(("Successfully installed "
+                           f"{APP_SHORT_NAME} Updates"),
+                           ("You can always restart the app to install"
+                           " updates"))
         except Exception as e:
             logging.error(f"Update failed: '{e}'")
             if show_progress or self.auto_install:
