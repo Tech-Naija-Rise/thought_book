@@ -5,6 +5,7 @@ import shutil
 from pathlib import Path
 import sys
 from packaging.version import Version
+import scripts.constants
 from scripts.constants import (
     APP_NAME,
     APP_ICON,
@@ -362,7 +363,7 @@ def main():
 
     print("Writing NSIS script...")
     nsi_path, finished_installer = write_nsi(d_i=deploy_info)
-    
+
     print("Building the executable...")
     exe_path = build_exe(d_i=deploy_info)
     print(f"Built exe: {exe_path}")
@@ -380,10 +381,38 @@ def main():
         print("Installer not found! Probably already moved or build failed.")
 
 
+def reminder_crucial():
+    print()
+    print("*"*60)
+    print("PLEASE ENSURE YOU UPDATE THE VERSION NUMBERS TO MATCH ALL "
+          "THE RELEVANT FILES:")
+    print(f"\t{scripts.constants.__file__}:36-40")
+    print(f"APP_VERSION = {deploy_info['APP_VERSION']}")
+    print("*"*60)
+    print()
+
+
+def update_version_number(num):
+    try:
+        with open(f"{scripts.constants.__file__}", "r") as r:
+            lines = r.readlines()
+            # print(lines)
+            for i, line in enumerate(lines):
+                if line.__contains__("APP_VERSION = "):
+                    lines[i] = f'APP_VERSION = "{num}"\n'
+                    break
+
+            with open(f"{scripts.constants.__file__}", "w") as w:
+                w.writelines(lines)
+        print(f"Updated App version in constants.py to '{num}'")
+    except Exception as e:
+        print(f"Failed with constants.py: {e}")
+        reminder_crucial()
+
 
 if __name__ == "__main__":
     main()
     write_json_file(DEPLOY_INFO_PATH, deploy_info)
-
+    update_version_number(deploy_info["APP_VERSION"])
     # optionally modify the constants.py file after everydeploy
     # with the current deploy.

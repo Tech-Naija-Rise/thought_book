@@ -30,7 +30,10 @@ lQIDAQAB
 
 # --- App Info ---
 APP_NAME = "Thought Book"
-APP_VERSION = "1.0.0"
+# for now, manually change 
+# the version to match the 
+# update.json and the deploy.
+APP_VERSION = "1.0.2"
 APP_SHORT_NAME = "BMTB"
 
 
@@ -170,12 +173,6 @@ def get_device_id(config_file):
 # config for unique device id
 
 PREMIUM_PRICE = 10_000
-
-
-# --- Load version if in deploy.info ---
-if DEPLOY_INFO_PATH.exists():
-    deploy_info = read_json_file(DEPLOY_INFO_PATH)
-    APP_VERSION = deploy_info.get("APP_VERSION", APP_VERSION)
 
 
 # AutoUpdater

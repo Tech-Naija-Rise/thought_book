@@ -96,13 +96,13 @@ class AutoUpdater:
                 progress_window.destroy()  # close progress window
 
             # Run installer
-            logging.info(f"Finished installation: '{filename}'")
             subprocess.Popen([filename, "/S"], shell=True)
             # self.parent.destroy()  # Close app to allow installer
             tkmsg.showinfo(("Successfully installed "
                            f"{APP_SHORT_NAME} Updates"),
                            ("You can always restart the app to install"
                            " updates"))
+            logging.info(f"Finished installation: '{filename}'")
         except Exception as e:
             logging.error(f"Update failed: '{e}'")
             if show_progress or self.auto_install:
