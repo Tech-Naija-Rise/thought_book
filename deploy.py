@@ -71,7 +71,7 @@ NSIS_INSTALLER_TEMPLATE = r"""
 Name "{APP_FULLNAME}"
 OutFile "dist\{finished_app_installer}"
 InstallDir "$LOCALAPPDATA\BM\{APP_SHORT_NAME}"
-
+RequestExecutionLevel user
 
 ;--------------------------------
 ; Modern UI Settings
@@ -161,12 +161,12 @@ Section "Install"
 
 
     ; Add registry for Add/Remove Programs
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "DisplayName" "{APP_NAME}"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "DisplayVersion" "{APP_VERSION}"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "UninstallString" "$INSTDIR\Uninstall_{APP_SHORT_NAME}.exe"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "InstallLocation" "$INSTDIR"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "Publisher" "TNR Software"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "DisplayIcon" "$INSTDIR\{APP_FULLNAME}.exe"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "DisplayName" "{APP_NAME}"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "DisplayVersion" "{APP_VERSION}"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "UninstallString" "$INSTDIR\Uninstall_{APP_SHORT_NAME}.exe"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "InstallLocation" "$INSTDIR"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "Publisher" "TNR Software"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}" "DisplayIcon" "$INSTDIR\{APP_FULLNAME}.exe"
 
 SectionEnd
 
@@ -186,7 +186,7 @@ Section "Uninstall"
 
     
     ; Remove registry entry
-    DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}"
+    DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_NAME}"
 
     RMDir /r "$INSTDIR"
 SectionEnd
