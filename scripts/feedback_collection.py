@@ -147,27 +147,8 @@ class FeedbackAPI:
         return "Log file does not exist."
 
     def connected_to_server(self, url=BMTB_FEEDBACK_SERVER):
-        try:
-            logging.info(f"Attempting to connect to server at '{url}'")
-            response = requests.get(url, timeout=60)
-
-            if response.status_code == 200:
-                logging.info("Connected to server successfully!")
-                return True
-            else:
-                logging.warning(
-                    f"Server responded with status code: {response.status_code}")
-                return False
-
-        except requests.Timeout:
-            logging.error("Connection timed out.")
-            return False
-        except requests.ConnectionError:
-            logging.error("Failed to connect to server.")
-            return False
-        except requests.RequestException as e:
-            logging.error(f"An unexpected error occurred: {e}")
-            return False
+        from .utils import connected_to_server
+        connected_to_server(BMTB_FEEDBACK_SERVER)
 
     def send_feedback(self, data={}, url=BMTB_FEEDBACK_SERVER):
         """This function is called from the GUI and

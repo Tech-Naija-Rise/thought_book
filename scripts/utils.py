@@ -335,6 +335,28 @@ def has_internet():
     except Exception:
         return False
 
+def connected_to_server(url):
+    try:
+        logging.info(f"Attempting to connect to server at '{url}'")
+        response = requests.get(url, timeout=60)
+
+        if response.status_code == 200:
+            logging.info("Connected to server successfully!")
+            return True
+        else:
+            logging.warning(
+                f"Server responded with status code: {response.status_code}")
+            return False
+
+    except requests.Timeout:
+        logging.error("Connection timed out.")
+        return False
+    except requests.ConnectionError:
+        logging.error("Failed to connect to server.")
+        return False
+    except requests.RequestException as e:
+        logging.error(f"An unexpected error occurred: {e}")
+        return False
 
 if __name__ == "__main__":
     # print(all_notes())

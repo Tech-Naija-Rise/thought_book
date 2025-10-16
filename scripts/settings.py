@@ -5,7 +5,10 @@ from tkinter import simpledialog
 import os
 import json
 
-from scripts.constants import APP_NAME, PASS_FILE, APP_ICON, SETTINGS_FILE
+from scripts.constants import (
+    APP_NAME, PASS_FILE, APP_ICON, SETTINGS_FILE,
+    TNR_BMTB_SERVER
+    )
 from scripts.utils import askstring, clear_all_notes
 from scripts.feedback_collection import FeedbackAPI
 from scripts.license_manager import LicenseManager
@@ -124,7 +127,12 @@ class SettingsWindow(ctk.CTkToplevel):
         tk.Button(btn_frame, text="Cancel", width=10, command=self.destroy,
                   **self.styles["button"]).pack(side="right")
 
+        self.after(2000, self.wake_server_up)
+
     # ----- Logic unchanged -----
+    def wake_server_up(self):
+        from .utils import connected_to_server
+        connected_to_server(TNR_BMTB_SERVER)
 
     def toggle_startup_lock(self):
         if self.startup_lock_var.get():
