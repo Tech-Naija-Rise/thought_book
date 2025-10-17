@@ -2,7 +2,7 @@ name: Update update.json on release
 
 on:
   release:
-    types: [published]
+    types: [published, edited]
 
 jobs:
   update-json:
