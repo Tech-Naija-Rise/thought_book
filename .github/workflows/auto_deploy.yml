@@ -18,13 +18,12 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update update.json
+        shell: bash
         run: |
           VERSION=${{ github.event.release.tag_name }}
-          CLEAN_VERSION=${VERSION#v}  # remove 'v' if tag is like 'v1.0.2'
+          CLEAN_VERSION=${VERSION#v} # remove 'v'
           FILE=update.json
-
           DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${VERSION}/BMTB_Installer_${CLEAN_VERSION}.exe"
-
           jq --arg ver "$CLEAN_VERSION" --arg url "$DOWNLOAD_URL" \
             '.latest_version = $ver | .url = $url' "$FILE" > tmp.json && mv tmp.json "$FILE"
 
