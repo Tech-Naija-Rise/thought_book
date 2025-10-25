@@ -340,7 +340,7 @@ def connected_to_server(url):
         logging.info(f"Attempting to connect to server at '{url}'")
         response = requests.get(url, timeout=60)
 
-        if response.status_code == 200:
+        if 200 <= response.status_code < 300:
             logging.info("Connected to server successfully!")
             return True
         else:
