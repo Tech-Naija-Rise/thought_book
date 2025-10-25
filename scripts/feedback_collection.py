@@ -159,27 +159,25 @@ class FeedbackAPI:
         else:
             self.data = data
 
-        # First test for the connection to the server
-        if self.connected_to_server():
-            try:
-                r = requests.post(
-                    url, json=self.data, timeout=10)
+        try:
+            r = requests.post(
+                url, json=self.data, timeout=10)
 
-                if ((r.status_code == 200)):
-                    logging.info("Feedback sent to server!")
-                    return True
-                elif r.status_code == 503:
-                    logging.error("Server is down temporarily")
-                    return None
-                else:
-                    logging.error(
-                        "Feedback not sent or server "
-                        "returned error check "
-                        "logs of server")
-                    return False
-            except Exception as e:
-                logging.error(f"Error sending feedback: {e}")
+            if (200 <= r.status_code < 300):
+                logging.info("Feedback sent to server!")
+                return True
+            elif r.status_code == 503:
+                logging.error("Server is down temporarily")
+                return None
+            else:
+                logging.error(
+                    "Feedback not sent or server "
+                    "returned error check "
+                    "logs of server")
                 return False
+        except Exception as e:
+            logging.error(f"Error sending feedback: {e}")
+            return False
 
     def save_or_send(self):
         threading.Thread(
@@ -194,8 +192,8 @@ class FeedbackAPI:
         if self._validate()[1]:  # type: ignore
             self.helper.configure(
                 text="Processing... Please don't close this window")
-            if has_internet() or self.connected_to_server():
-                # if i have internet, then do this through gmail directly.
+            if has_internet():
+                
                 s = self.send_feedback()
                 if s:
                     self.helper.configure(
@@ -288,11 +286,16 @@ class FeedbackAPI:
             json.dump([], w)
 
     def check_periodically(self):
+        # Wake up the server if it is sleeping
+        try:
+            requests.get(BMTB_FEEDBACK_SERVER)
+        except Exception as e:
+            logging.error(f"Server problems again. {e}", stack_info=True)
         logging.info("Starting internet check background process")
         while True:
             saved_feedbacks = self.get_saved()
             # XXX
-            if saved_feedbacks and (has_internet() or self.connected_to_server()):
+            if saved_feedbacks and (has_internet()):
                 logging.info(
                     f"Sending {len(saved_feedbacks)} saved feedback(s)..."
                 )
@@ -316,6 +319,8 @@ class FeedbackAPI:
 
             elif not saved_feedbacks:
                 break
+
+
             time.sleep(60)  # check every 1 minute
 
 
