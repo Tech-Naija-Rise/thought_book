@@ -39,7 +39,7 @@ class AutoUpdater:
             notes = data.get('notes', "")
             logging.info(f"Latest Version found: {latest_version}")
 
-            if version.parse(latest_version) > version.parse(APP_VERSION):
+            if (version.parse(latest_version) > version.parse(APP_VERSION)):
                 logging.info(f"Latest Version found: {latest_version}")
                 if self.auto_install:
                     self.download_and_install(url)
@@ -48,7 +48,7 @@ class AutoUpdater:
             else:
                 logging.info("Software up to date")
                 if not self.auto_install:
-                    tkmsg.showinfo(f"Your {APP_NAME} is up to date")
+                    tkmsg.showinfo("Up to Date",f"Your {APP_NAME} is up to date")
 
         except Exception as e:
             # Silent fail for background updates
@@ -98,13 +98,14 @@ class AutoUpdater:
             # Run installer
             subprocess.Popen([filename, "/S"], shell=True)
             # self.parent.destroy()  # Close app to allow installer
-            tkmsg.showinfo(("Successfully installed "
-                           f"{APP_SHORT_NAME} Updates"),
-                           ("You can always restart the app to install"
-                           " updates"))
+            if show_progress:
+                tkmsg.showinfo(("Successfully installed "
+                            f"{APP_SHORT_NAME} Updates"),
+                            ("You can always restart the app to install"
+                            " updates"))
             logging.info(f"Finished installation: '{filename}'")
         except Exception as e:
             logging.error(f"Update failed: '{e}'")
-            if show_progress or self.auto_install:
+            if show_progress:
                 tkmsg.showerror(
                     f"{APP_SHORT_NAME} Update", f"Update failed:\n'{e}'")

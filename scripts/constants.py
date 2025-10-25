@@ -30,31 +30,35 @@ lQIDAQAB
 
 # --- App Info ---
 APP_NAME = "Thought Book"
-# for now, manually change 
-# the version to match the 
+# for now, manually change
+# the version to match the
 # update.json and the deploy.
-APP_VERSION = "1.0.3"
+APP_VERSION = "1.0.2"
 APP_SHORT_NAME = "BMTB"
 
 
 # --- Helper Functions ---
-def resource_path(relative_path: Path) -> Path:
+# Always have this in other BM apps
+def resource_path(relative_path="") -> Path:
     """Return absolute path to resource (works for dev & PyInstaller)."""
     try:
-        # type: ignore # PyInstaller temp folder
-        base_path = Path(sys._MEIPASS)  # type: ignore
-    except AttributeError:
-        base_path = Path(__file__).resolve().parent.parent
-    return base_path / relative_path
+        # will run when Deployed
+        base_path= Path("_internal") / "data" / relative_path
+        if not base_path.exists():
+            raise TypeError
+    except TypeError:
+        # Means it is run in debug mode
+        base_path =  Path(__file__).resolve().parent.parent
 
+    return base_path
 
 # --- Main Folders ---
 MAIN_FOLDER = Path(__file__).resolve().parent.parent
 
 
 # --- Images & Icons ---
-IMGS_FOLDER = MAIN_FOLDER / "imgs"
-APP_ICON = resource_path(IMGS_FOLDER / "logo.ico")
+IMGS_FOLDER = resource_path() / "imgs"
+APP_ICON = IMGS_FOLDER / "logo.ico"
 APP_PHOTO = IMGS_FOLDER / "logo.png"
 
 
@@ -188,7 +192,8 @@ TNR_BMTB_SERVER = "https://feedback-server-tnr.onrender.com"
 
 
 if __name__ == "__main__":
-    print(f"Main folder: {MAIN_FOLDER}")
+    # print(f"Main folder: {MAIN_FOLDER}")
     print(f"Data folder: {DATA_FOLDER}")
     print(f"Device ID: {get_device_id(ID_FILE)}")
     print(f"App version: {APP_VERSION}")
+    print(f"App ICON: {APP_ICON}")

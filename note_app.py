@@ -85,7 +85,7 @@ class NotesApp(ctk.CTk):
         if self.locked:
             return
 
-        self.wm_title(APP_NAME)
+        self.wm_title(f"{APP_NAME} {APP_VERSION}")
         self.wm_iconbitmap(APP_ICON)
 
         self.notes = self.load_notes()

@@ -6,7 +6,7 @@ import os
 import json
 
 from scripts.constants import (
-    APP_NAME, PASS_FILE, APP_ICON, SETTINGS_FILE,
+    APP_NAME, APP_VERSION, PASS_FILE, APP_ICON, SETTINGS_FILE,
     TNR_BMTB_SERVER
 )
 from scripts.utils import askstring, clear_all_notes
@@ -32,7 +32,7 @@ class SettingsWindow(ctk.CTkToplevel):
 
     def __init__(self, parent, cipher):
         super().__init__(parent)
-        self.title("Settings")
+        self.title(f"Settings")
         self.geometry("450x450")
         self.wm_iconbitmap(APP_ICON)
         self.resizable(False, False)

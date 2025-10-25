@@ -211,7 +211,15 @@ RequestExecutionLevel user  ; 🚫 No admin rights, per-user only
 !define MUI_HEADERIMAGE
 !define MUI_HEADERIMAGE_BITMAP ".\\imgs\\banner_h.bmp"
 !define MUI_WELCOMEFINISHPAGE_BITMAP ".\\imgs\\banner_v.bmp"
+!define MUI_UNFINISHPAGE_BITMAP ".\\imgs\\banner_v.bmp"
 BrandingText "TNR Software"
+
+; Finish Page Launch Configuration (Updated to use a function for reliability)
+!define MUI_FINISHPAGE_RUN "Launch {APP_NAME}"
+!define MUI_FINISHPAGE_RUN_FUNCTION LaunchApp
+Function LaunchApp
+    Exec '"$INSTDIR\\{APP_FULLNAME}.exe"'
+FunctionEnd
 
 ;--------------------------------
 ; Pages
@@ -220,45 +228,17 @@ BrandingText "TNR Software"
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
 
-!define MUI_FINISHPAGE_SHOW "LaunchPage"
-!define MUI_FINISHPAGE_LEAVE "Finish"
 
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_UNPAGE_FINISH
 !insertmacro MUI_LANGUAGE "English"
 
-Var LaunchCheckbox
-
-Function LaunchPage
-    nsDialogs::Create 1018
-    Pop $0
-    ${{If}} $0 == error
-        Abort
-    ${{EndIf}}
-
-    ${{NSD_CreateCheckBox}} 20u 20u 200u 12u "Launch {APP_NAME}"
-    Pop $LaunchCheckbox
-    ${{NSD_SetState}} $LaunchCheckbox 1
-
-    nsDialogs::Show
-FunctionEnd
-
-Function Finish
-    ${{NSD_GetState}} $LaunchCheckbox $0
-    StrCmp $0 1 LaunchApp Done
-
-    LaunchApp:
-        Exec "$INSTDIR\{APP_FULLNAME}.exe"
-
-    Done:
-        Return
-FunctionEnd
-
 ;--------------------------------
 Section "Install"
     SetOutPath "$INSTDIR"
-    File "dist\{APP_FULLNAME}.exe"
+    File "dist\{APP_FULLNAME}\{APP_FULLNAME}.exe"
+    File /r "dist\{APP_FULLNAME}\_internal"
 
     ; Create Start Menu shortcut (user only)
     CreateDirectory "$SMPROGRAMS\{APP_NAME}"
@@ -287,8 +267,6 @@ SectionEnd
 
 ;--------------------------------
 Section "Uninstall"
-    ; Delete main app file
-    Delete "$INSTDIR\{APP_FULLNAME}.exe"
     
     ; Delete shortcuts
     Delete "$SMPROGRAMS\{APP_NAME}\{APP_NAME}.lnk"
@@ -318,8 +296,8 @@ def build_exe(script_path="note_app.py", d_i=deploy_info):
     exe_dir = Path("dist")
     exe_dir.mkdir(exist_ok=True)
     cmd = f'pyinstaller --noconfirm -i "{APP_ICON}"'
-    cmd += f' --add-data "{APP_ICON};imgs" -n "{APP_FULLNAME}"'
-    cmd += f' --hide-console hide-early --onefile "{script_path}"'
+    cmd += f' --add-data "{APP_ICON};data/imgs" -n "{APP_FULLNAME}"'
+    cmd += f' --noconsole "{script_path}"'
     print(cmd)
     os.system(cmd)
     for item in ["build", "__pycache__", f"{APP_FULLNAME}.spec"]:
@@ -328,7 +306,7 @@ def build_exe(script_path="note_app.py", d_i=deploy_info):
             shutil.rmtree(p, ignore_errors=True)
         elif p.is_file():
             p.unlink(missing_ok=True)
-    return exe_dir / f"{APP_FULLNAME}.exe"
+    return exe_dir /f"{APP_FULLNAME}"/ f"{APP_FULLNAME}.exe"
 
 # Write NSIS script
 
@@ -361,22 +339,23 @@ def main():
     print(
         f"\n{'-'*60}\nMaking {start} changes to the app...\nVersion: {deploy_info['APP_VERSION']}\n{'-'*60}\n")
 
-    print("Writing NSIS script...")
-    nsi_path, finished_installer = write_nsi(d_i=deploy_info)
 
     print("Building the executable...")
     exe_path = build_exe(d_i=deploy_info)
     print(f"Built exe: {exe_path}")
 
+    print("Writing NSIS script...")
+    nsi_path, finished_installer = write_nsi(d_i=deploy_info)
+
     compile_installer(nsi_path)
-    print(f"Installer built successfully: {finished_installer}")
+    print(f"Installer built successfully: '{finished_installer}'")
 
     output_dir = Path("C:\\Users\\USER\\Documents\\PROGRAMMING\\FINISHED APPS")
     output_dir.mkdir(exist_ok=True)
     installer_path = Path("dist") / finished_installer
     if installer_path.exists():
         shutil.move(str(installer_path), str(output_dir / finished_installer))
-        print(f"Installer moved to: {output_dir / finished_installer}")
+        print(f"Installer moved to: '{output_dir / finished_installer}'")
     else:
         print("Installer not found! Probably already moved or build failed.")
 
