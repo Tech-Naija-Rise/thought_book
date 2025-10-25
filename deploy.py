@@ -334,11 +334,28 @@ def compile_installer(nsi_path):
 
 # Main deployment flow
 
+def update_version_number(num):
+    try:
+        with open(f"{scripts.constants.__file__}", "r") as r:
+            lines = r.readlines()
+            # print(lines)
+            for i, line in enumerate(lines):
+                if line.__contains__("APP_VERSION = "):
+                    lines[i] = f'APP_VERSION = "{num}"\n'
+                    break
+
+            with open(f"{scripts.constants.__file__}", "w") as w:
+                w.writelines(lines)
+        print(f"Updated App version in constants.py to '{num}'")
+    except Exception as e:
+        print(f"Failed with constants.py: {e}")
+        reminder_crucial()
 
 def main():
     print(
         f"\n{'-'*60}\nMaking {start} changes to the app...\nVersion: {deploy_info['APP_VERSION']}\n{'-'*60}\n")
 
+    update_version_number(deploy_info["APP_VERSION"])
 
     print("Building the executable...")
     exe_path = build_exe(d_i=deploy_info)
@@ -371,27 +388,10 @@ def reminder_crucial():
     print()
 
 
-def update_version_number(num):
-    try:
-        with open(f"{scripts.constants.__file__}", "r") as r:
-            lines = r.readlines()
-            # print(lines)
-            for i, line in enumerate(lines):
-                if line.__contains__("APP_VERSION = "):
-                    lines[i] = f'APP_VERSION = "{num}"\n'
-                    break
-
-            with open(f"{scripts.constants.__file__}", "w") as w:
-                w.writelines(lines)
-        print(f"Updated App version in constants.py to '{num}'")
-    except Exception as e:
-        print(f"Failed with constants.py: {e}")
-        reminder_crucial()
-
 
 if __name__ == "__main__":
     main()
     write_json_file(DEPLOY_INFO_PATH, deploy_info)
-    update_version_number(deploy_info["APP_VERSION"])
+    
     # optionally modify the constants.py file after everydeploy
     # with the current deploy.
