@@ -312,8 +312,8 @@ class LicenseManager:
 
         data = str(key_entry.get("1.0", "end-1c").strip()).split("||")
 
-        license_data = data[0]
-        license_key = data[1]
+        license_data = data[1]
+        license_key = data[0]
 
         if not license_data or not license_key:
             self._update_status("Required fields missing.", col="#ff3333")
